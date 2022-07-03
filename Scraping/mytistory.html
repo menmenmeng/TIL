@@ -1,0 +1,122 @@
+
+	<!doctype html>
+	<html lang="ko">
+	<head>
+		<meta charset="utf-8">
+		<meta property="og:url" content="https://www.tistory.com">
+		<meta property="og:site_name" content="TISTORY">
+		<meta property="og:title" content="TISTORY">
+		<meta property="og:description" content="나를 표현하는 블로그를 만들어보세요.">
+		<meta property="og:image" content="//t1.daumcdn.net/tistory_admin/static/images/openGraph/opengraph.png">
+		<title>TISTORY</title>
+		<link rel="shortcut icon" href="//t1.daumcdn.net/tistory_admin/static/top/favicon.ico">
+		<link rel="apple-touch-icon" href="//t1.daumcdn.net/tistory_admin/static/images/openGraph/180x180.png">
+		<link rel="apple-touch-icon" sizes="76x76" href="//t1.daumcdn.net/tistory_admin/static/images/openGraph/76x76.png">
+		<link rel="apple-touch-icon" sizes="120x120" href="//t1.daumcdn.net/tistory_admin/static/images/openGraph/120x120.png">
+		<link rel="apple-touch-icon" sizes="152x152" href="//t1.daumcdn.net/tistory_admin/static/images/openGraph/152x152.png">
+		<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/tistory_admin/assets/tistory-web-top/1645494252/static/css/ext/swiper.min.css">
+		<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/tistory_admin/www/style/top/font.css">
+		<link rel="stylesheet" type="text/css" href="https://t1.daumcdn.net/tistory_admin/assets/tistory-gnb/3.2.3/gnb.min.css">
+		<link rel="stylesheet" type="text/css" href="//t1.daumcdn.net/tistory_admin/assets/tistory-web-top/1645494252/static/css/pc/top.css">
+		<script type="text/javascript" src="https://developers.kakao.com/sdk/js/kakao.min.js" ></script>
+<!--[if lt IE 9]>
+<script src="https://t1.daumcdn.net/tistory_admin/lib/jquery-1.12.4.min.js"></script>
+<![endif]-->
+<!--[if gte IE 9]><!-->
+<script src="https://t1.daumcdn.net/tistory_admin/lib/jquery-3.1.0.min.js"></script>
+<!--<![endif]-->
+<script src="https://t1.daumcdn.net/tistory_admin/lib/fingerprint2-1.4.2.min.js"></script>
+<script type="text/javascript" src="//m1.daumcdn.net/svc/original/U03/cssjs/jquery/plugin/jquery.cookie-1.4.0.min.js"></script>
+<script type="text/javascript" src="//s1.daumcdn.net/svc/original/U03/cssjs/userAgent/userAgent-1.0.14.min.js"></script>
+	</head>
+	<body>
+	<div id="kakaoIndex"><!-- 웹접근성용 바로가기 링크 모음 -->
+		<a href="#kakaoBody">본문 바로가기</a>
+		<a href="#kakaoLnb">메뉴 바로가기</a> <!-- 2017-05-31 수정 : href 값 kakaoGnb -> kakaoLnb 로 변경 -->
+	</div>
+
+	<div id="kakaoWrap" class="tistory_type1">
+		<div id="kakaoHead" role="banner" class="#GNB kakao_head "><!-- head_type1 : 추가타입 -->
+			<div class="inner_header">
+				<h1>
+					<a href="/" id="kakaoServiceLogo" class="link_logo">
+						<span class="img_common_tistory tit_tistory tit_tistory_white">티스토리</span>
+						<span class="img_common_tistory tit_tistory tit_tistory_black"></span>
+					</a>
+				</h1>
+				<div class="info_tistory">
+					<div class="logn_tistory" style="display:none">
+					</div>
+				</div>
+			</div>
+		</div>
+		<hr class="hide">
+		<div id="kakaoContent" role="main">
+			<div id="cMain">
+
+	<script type="text/javascript">
+		Kakao.init("b8aef3eeb03fa312b81795386484f051");
+		function kakaoAuth(reauthenticate) {
+			if(reauthenticate === undefined) {
+				reauthenticate = false;
+			}
+			Kakao.Auth.authorize({redirectUri: 'https://www.tistory.com/auth/kakao/redirect', state: 'aHR0cHM6Ly9iZWVyLXVwLnRpc3RvcnkuY29tL21hbmFnZQ', reauthenticate: reauthenticate})
+		}
+	</script>
+	<div class="content_login content_login_type1" style="background-image:url(//t1.daumcdn.net/tistory_admin/static/top/pc/bg_login_black_200910.png)">
+		<div class="inner_login">
+			<div class="login_tistory login_type2">
+				<h2 id="kakaoBody" class="screen_out">로그인</h2>
+				<strong class="img_common_tistory txt_tistory_v1">TISTORY</strong>
+				<a href="#" class="btn_login link_kakao_id" onclick="javascript:kakaoAuth();"><span class="img_top ico_kakao_type1"></span><span class="txt_login">카카오계정 로그인</span></a>
+				<a href="/auth/login/old?redirectUrl=https%3A%2F%2Fbeer-up.tistory.com%2Fmanage" class="btn_login link_tistory_id"><span class="img_top ico_tistory_type2"></span><span class="txt_login">티스토리계정 로그인</span></a>
+				<a href="#" onclick="javascript:kakaoAuth(true);" class="link_login_type1">카카오계정으로 티스토리 시작하기</a>
+			</div>
+		</div>
+	</div>
+<script type="text/javascript">
+	var Config = {
+		production: true,
+		service: 'tistory',
+		useWriteButton: false,
+		useBlogList: true
+	};
+
+	var appInfo = {
+		domain: 'tistory.com',
+		topUrl: 'https://www.tistory.com',
+		loginUrl: 'https://www.tistory.com/auth/login',
+		logoutUrl: 'https://www.tistory.com/auth/logout',
+		memberUrl: 'https://www.tistory.com/member',
+		gnbBaseUrl: 'https://www.tistory.com/accio',
+		thumbnailBaseUrl: 'https://i1.daumcdn.net/thumb',
+		kakaoAccountUrl: 'https://accounts.kakao.com/weblogin/account/info'
+	};
+
+	var initData = {
+	};
+
+	var production = true;
+</script>
+	<script type="text/javascript" src="//t1.daumcdn.net/tiara/js/v1/tiara.min.js"></script>
+	<script type="text/javascript">
+		window.addEventListener('load', function (){
+			TiaraTracker.getInstance()
+					.setSvcDomain('user.tistory.com')
+					.trackPage('로그인 브릿지 조회')
+					.setSection('로그인')
+					.setPage('로그인_브릿지')
+					.setKakaoAppKey('b8aef3eeb03fa312b81795386484f051')
+					.setAppUserId('')
+					.setDisableSendLegacy(true)
+					.track();
+		});
+	</script>
+
+			</div>
+		</div>
+		<hr class="hide">
+	</div>
+
+	</body>
+	</html>
