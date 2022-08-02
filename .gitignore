@@ -2,3 +2,9 @@ _etc
 _data-examples
 AutoTrader/cert
 AutoTrader/binance-futures-trader/binance_ftrs_venv
+*cert*
+*test*
+*test.ipynb
+/Python/test.ipynb
+
+*ex_data*
