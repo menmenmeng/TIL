@@ -23,13 +23,15 @@ import seaborn as sns
 #     return dataDf[CloseName].astype(np.float64).rolling(window).std()
 
 
-class Strategy():
-    def __init__(self, oldest=3, newest=0):
+class MyStrategy():
+    def __init__(self, oldest=4, newest=0):
         # How many data will you use?
         self.oldest = oldest
         self.newest = newest
 
         # save your conditions.
+        self.tmp_conditions = []
+
         self.long_conditions = []
         self.short_conditions = []
         self.clear_conditions = []
@@ -52,7 +54,7 @@ class Strategy():
         self.ownInd = dict()
 
     # methods for making indicators.
-    def get_MA(self, window, closePrice):
+    def get_MA(self, window, closePrice): # closePrice는 데이터프레임에서 만들어져야 하니까. 데이터프레임....이 있어야 하니까. 실제 데이터를 쓰는 BackTester에 있어야?
         indicator = closePrice.astype(np.float64).rolling(window).mean()
         self.ma[f'MA{window}'] = indicator
         return indicator
@@ -69,7 +71,7 @@ class Strategy():
         return indicator
 
     # method for making condition.
-    def add_condition(self, LSC, indc1, compareOperator, indc2, indices):
+    def add_condition(self, LSC, func1, indc1, compareOperator, func2, indc2, indices):
         # if index exceeded using_indices, modify oldest/newest index automatically.
         if max(indices)>self.oldest:
             print("oldest index modified.")
@@ -84,7 +86,7 @@ class Strategy():
         '''
         conditions = []
         for idx in indices:
-            conditions.append = [indc1, compareOperator, indc2, idx]
+            conditions.append = [func1, indc1, compareOperator, func2, indc2, idx]
 
         if LSC=='long':
             self.long_conditions += conditions
@@ -102,6 +104,20 @@ class Strategy():
             self.stopLoss_long_conditions += conditions
         elif LSC=='stopLoss_short':
             self.stopLoss_short_conditions += conditions
+
+    def add_andCondition(self, func1, indc1, compareOperator, func2, indc2, indices):
+        for idx in indices:
+            self.tmp_conditions.append([func1, indc1, compareOperator, func2, indc2, idx])
+
+    def add_Condition(self, LSC):
+        if LSC=='long':
+            self.long_conditions.append(self.tmp_conditions)
+        elif LSC=='short':
+            self.short_conditions.append(self.tmp_conditions)
+        elif LSC=='clear':
+            self.clear_conditions.append(self.tmp_conditions)       
+
+        self.tmp_conditions = []
 
     def get_saved_indicators(self):
         return self.ma, self.std, self.ownInd
