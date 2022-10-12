@@ -1,4 +1,3 @@
-# 전략용 library
 import time
 import requests
 import numpy as np
@@ -9,10 +8,10 @@ from binance.um_futures import UMFutures
 from binance.websocket.um_futures.websocket_client import UMFuturesWebsocketClient
 from binance.lib.utils import config_logging
 
-# API KEY 저장된 곳
+# where API KEY stored.(USE YOUR OWN KEY)
 from cert import binanceKey
 
-# 시각화 library
+# visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
 
