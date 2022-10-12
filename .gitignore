@@ -3,7 +3,7 @@ _data-examples
 AutoTrader/cert
 AutoTrader/binance-futures-trader/binance_ftrs_venv
 *cert*
-*test*
+*test.py
 *test.ipynb
 /Python/test.ipynb
 
@@ -12,3 +12,4 @@ AutoTrader/binance-futures-trader/binance_ftrs_venv
 
 # files
 # BFC_um-futures(HTTP).md
+binance_backtesting.ipynb
