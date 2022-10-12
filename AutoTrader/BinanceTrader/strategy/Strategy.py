@@ -24,16 +24,17 @@ import seaborn as sns
 
 
 class Strategy():
-    def __init__(self, using_indices=4):
+    def __init__(self, oldest=3, newest=0):
         # How many data will you use?
-        self.using_indices = using_indices
+        self.oldest = oldest
+        self.newest = newest
 
         # save your conditions.
         self.long_conditions = []
         self.short_conditions = []
         self.clear_conditions = []
 
-        # more deeper (not essential)
+        # for building deeper strategy (not essential)
         ## take Profit conditions
         self.takeProfit_long_conditions = []
         self.takeProfit_short_conditions = []
@@ -47,6 +48,9 @@ class Strategy():
         # StdDev lists
         self.std = dict()
 
+        # own indicators
+        self.ownInd = dict()
+
     # methods for making indicators.
     def get_MA(self, window, closePrice):
         indicator = closePrice.astype(np.float64).rolling(window).mean()
@@ -58,26 +62,46 @@ class Strategy():
         self.std[f'std{window}'] = indicator
         return indicator
 
-    # 어떻게 만들지 이건....
-    def get_own_indicator(self, **kwargs):
-        window = kwargs['window']
-        closePrice = kwargs['closePrice']
-        volume = kwargs['volume']
+    ## make indicator for yourself.
+    ## you have to use your data from DataGen
+    def get_own_indicator(self, indicatorName, indicator):
+        self.ownInd[indicatorName] = indicator
+        return indicator
 
-    def add_condition(self, LSC, index):
-        # if index exceeded using_indices, add index automatically.
-        if index>=self.using_indices:
-            print("index modified.")
-            self.using_indices = index
+    # method for making condition.
+    def add_condition(self, LSC, indc1, compareOperator, indc2, indices):
+        # if index exceeded using_indices, modify oldest/newest index automatically.
+        if max(indices)>self.oldest:
+            print("oldest index modified.")
+            self.oldest = max(indices)
+        if min(indices)<self.newest:
+            print("newest index modified.")
+            self.newest = min(indices)
         
+        '''
+        아래 문장은 무시하기. 여기에 column data를 저장하는 방식은 좋지 않은 듯.
+        # 이 부분에서 df에서 column1, column2를 가져와서 column1data, column2data를 만드는 과정이 필요함
+        '''
+        conditions = []
+        for idx in indices:
+            conditions.append = [indc1, compareOperator, indc2, idx]
+
         if LSC=='long':
-            condition = None
-            self.long_conditions.append(condition)
+            self.long_conditions += conditions
         elif LSC=='short':
-            condition = None
-            self.short_conditions.append(condition)
+            self.short_conditions += conditions
         elif LSC=='clear':
-            condition = None
-            self.clear_conditions.append(condition)
-        
-    
+            self.clear_conditions += conditions
+
+        # if you want to build deeper strategy.
+        elif LSC=='takeProfit_long':
+            self.takeProfit_long_conditions += conditions
+        elif LSC=='takeProfit_short':
+            self.takeProfit_short_conditions += conditions
+        elif LSC=='stopLoss_long':
+            self.stopLoss_long_conditions += conditions
+        elif LSC=='stopLoss_short':
+            self.stopLoss_short_conditions += conditions
+
+    def get_saved_indicators(self):
+        return self.ma, self.std, self.ownInd

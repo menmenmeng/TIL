@@ -31,6 +31,8 @@ class BackTester():
         self.maxLimit = maxLimit
         # var for busted (when did you bust?)
         self.bustedIndex = 0
+        # var for backdata
+        self.df = None
 
     def _get_tradeAmount(self, tradePrice):
         tradeAmount = round(self.maxLimit/tradePrice/2, 4)
@@ -88,3 +90,57 @@ class BackTester():
 
     def get_commission(self):
         pass
+
+    # backtesting code with own strategy
+    ## strategy Instance, DataGen Instance가 전부 정의되어 있어야 함.
+    def backtest(self, strategyInstance, dataInstance):
+        strategy = strategyInstance
+        data = dataInstance
+        self.df = data.backdata
+
+        for currentIdx in range(strategy.oldest, len(self.df)-strategy.newest):
+            currentPrice = self.df['Close'][currentIdx]
+
+            # long position
+            long_conditions = self._make_conditions(currentIdx, strategy.long_conditions)
+            if all(long_conditions):
+                self.set_long(currentPrice)
+                self.get_log(currentIdx, 'long')
+
+            # short position
+            short_conditions = self._make_conditions(currentIdx, strategy.short_conditions)
+            if all(short_conditions):
+                self.set_short(currentPrice)
+                self.get_log(currentIdx, 'short')
+
+            # clear position
+            clear_conditions = self._make_conditions(currentIdx, strategy.clear_conditions)
+            if all(clear_conditions):
+                self.set_clear(currentPrice)
+                self.get_log(currentIdx, 'clear')
+
+
+    # convert pseudo-condition to REAL condition(usable in python)
+    ## make conditions list
+    def _make_conditions(self, currentIdx, conditions):
+        real_conditions = []
+        for p_cond in conditions:
+            real_cond = self._make_condition(p_cond, currentIdx)
+            real_conditions.append(real_cond)
+            return real_conditions
+
+    ## make a pseudo-condition to one real condition
+    def _make_condition(self, p_cond, currentIdx):
+        indc1, op, indc2, pastIdx = p_cond
+        data1 = self.df[indc1][currentIdx-pastIdx]
+        data2 = self.df[indc2][currentIdx-pastIdx]
+        if op=='<':
+            return data1<data2
+        elif op=='<=':
+            return data1<=data2
+        elif op=='>':
+            return data1>data2
+        elif op=='>=':
+            return data1>=data2
+        elif op=='==':
+            return data1==data2
