@@ -2,32 +2,10 @@ import numpy as np
 
 class BackTester():
     def __init__(self, asset=1000, maxLimit=1000): # default _varsDict['_asset'] : 1000 dollars
+        # dictionary to store information about long, short position.
+        # you may use variables below for your strategy. --> use text.
+        # example) if you want to use long_amount for your strategy, you just use text "_long_amount" in your condition.
         self._varsDict = dict()
-        self._varsDict['_long_amount'] = 0
-        self._varsDict['_long_meanPrice'] = 0
-        self._varsDict['_long_flag'] = False
-
-        self._varsDict['_short_amount'] = 0
-        self._varsDict['_short_meanPrice'] = 0
-        self._varsDict['_short_flag'] = False
-
-        self._varsDict['_asset'] = asset
-        self.PRINCIPAL = asset
-        self._varsDict['_maxLimit'] = maxLimit
-        self.bustedIndex = 0
-        # var for backdata
-        self.df = None
-        # vars for BackTester variables
-        self._vars = ['_long_amount',
-                      '_long_meanPrice', 
-                      '_long_flag', 
-                      '_short_amount', 
-                      '_short_meanPrice', 
-                      '_short_flag',
-                      '_asset',
-                      '_maxLimit']
-
-        '''
         # vars for long position
         self._varsDict['_long_amount'] = 0
         self._varsDict['_long_meanPrice'] = 0
@@ -36,29 +14,27 @@ class BackTester():
         self._varsDict['_short_amount'] = 0
         self._varsDict['_short_meanPrice'] = 0
         self._varsDict['_short_flag'] = False
-        # vars for base _varsDict['_asset']
-        self._varsDict['_asset'] = _varsDict['_asset']
-        self.PRINCIPAL = _varsDict['_asset'] # constant
-        self._varsDict['_maxLimit'] = _varsDict['_maxLimit']
-        # var for busted (when did you bust?)
+        # vars for asset and max Limit of long, short position
+        self._varsDict['_asset'] = asset
+        self._varsDict['_maxLimit'] = maxLimit
+        # var for basis of your wallet.
+        self.PRINCIPAL = asset
+        # if your wallet busted, when did you busted?
         self.bustedIndex = 0
+
+        # store final return
+        self.finalReturn = 0
+
         # var for backdata
         self.df = None
-        # vars for BackTester variables
-        self._vars = ['_long_amount',
-                      '_long_meanPrice', 
-                      '_long_flag', 
-                      '_short_amount', 
-                      '_short_meanPrice', 
-                      '_short_flag',
-                      '_asset',
-                      '_maxLimit']
-        '''
 
+    # How much coin do you buy/sell for your position?
+    ## every positioning, your buy/sell amount will be half of former positioning's amount.
     def _get_tradeAmount(self, tradePrice):
         tradeAmount = round(self._varsDict['_maxLimit']/tradePrice/2, 4)
         return tradeAmount
 
+    # long positioning
     def set_long(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
         self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
@@ -67,6 +43,7 @@ class BackTester():
         self._varsDict['_long_flag'] = True
         return
 
+    # short positioning
     def set_short(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
         self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
@@ -75,6 +52,7 @@ class BackTester():
         self._varsDict['_short_flag'] = True
         return
 
+    # clearing. 
     def set_clear(self, tradePrice):
         self._varsDict['_asset'] -= self._varsDict['_short_amount'] * (tradePrice - self._varsDict['_short_meanPrice'])
         self._varsDict['_asset'] += self._varsDict['_long_amount'] * (tradePrice - self._varsDict['_long_meanPrice'])
@@ -83,6 +61,7 @@ class BackTester():
         self._varsDict['_maxLimit'] = self._varsDict['_asset']
         return
 
+    # check asset positive. if asset < 0, you will receive "Busted" message.
     def check_asset_positive(self, tradePrice):
         tmpAsset = self._varsDict['_asset'] - (self._varsDict['_short_amount'] * (tradePrice - self._varsDict['_short_meanPrice']))
         tmpAsset = self._varsDict['_asset'] + (self._varsDict['_long_amount'] * (tradePrice - self._varsDict['_long_meanPrice']))
@@ -91,6 +70,7 @@ class BackTester():
         else:
             return True
 
+    # for testing, 
     def get_log(self, index, stateTxt):
         print(f'#########################')
         print(f'## index {index}, {stateTxt}')
@@ -105,8 +85,8 @@ class BackTester():
             print('maxLimit:', self._varsDict['_maxLimit'])
             self.bustedIndex = index
 
-    def get_current_return(self, index):
-        print('**current return : ', self._varsDict['_asset']/self.PRINCIPAL*100, '%')
+    def get_current_return(self):
+        # print('**current return : ', self._varsDict['_asset']/self.PRINCIPAL*100, '%')
         return self._varsDict['_asset'] / self.PRINCIPAL
 
     def get_commission(self):
@@ -122,7 +102,7 @@ class BackTester():
     #     self.df = data.backdata
 
     # GenBackData 파일이 아직 만들어지지 않았으므로 아래의 메소드를 사용
-    def backtest_tmp(self, strategyInstance, df):
+    def backtest_tmp(self, strategyInstance, df, printLog=True, saveProfit=True):
         strategy = strategyInstance
         self.df = df
 
@@ -135,7 +115,8 @@ class BackTester():
                 realClearAndConditions.append(all(self._make_conditions(currentIdx, clear_and_conditions)))
             if any(realClearAndConditions) and (self._varsDict['_long_flag'] or self._varsDict['_short_flag']):
                 self.set_clear(currentPrice)
-                self.get_log(currentIdx, 'clear')
+                if printLog:
+                    self.get_log(currentIdx, 'clear')
 
             # long position
             realLongAndConditions = []
@@ -143,7 +124,8 @@ class BackTester():
                 realLongAndConditions.append(all(self._make_conditions(currentIdx, long_and_conditions)))
             if any(realLongAndConditions):
                 self.set_long(currentPrice)
-                self.get_log(currentIdx, 'long')
+                if printLog:
+                    self.get_log(currentIdx, 'long')
 
             # short position
             realShortAndConditions = []
@@ -151,52 +133,25 @@ class BackTester():
                 realShortAndConditions.append(all(self._make_conditions(currentIdx, short_and_conditions)))
             if any(realShortAndConditions):
                 self.set_short(currentPrice)
-                self.get_log(currentIdx, 'short')
+                if printLog:
+                    self.get_log(currentIdx, 'short')
 
-            '''
-            # long position
-            long_conditions = self._make_conditions(currentIdx, strategy.long_conditions)
-            if all(long_conditions):
-                self.set_long(currentPrice)
-                self.get_log(currentIdx, 'long')
+            if not self.check_asset_positive(currentPrice):
+                self.get_log(currentIdx, 'Busted')
 
-            # short position
-            short_conditions = self._make_conditions(currentIdx, strategy.short_conditions)
-            if all(short_conditions):
-                self.set_short(currentPrice)
-                self.get_log(currentIdx, 'short')
-
-            # clear position
-            clear_conditions = self._make_conditions(currentIdx, strategy.clear_conditions)
-            if all(clear_conditions):
-                self.set_clear(currentPrice)
-                self.get_log(currentIdx, 'clear')
-
-            # 왜 이렇게 어렵냐.... 위의 거는 OR 조건에 대한 생각 없이 만든 것. 혹시 몰라서 남겨놓습니다.
-            '''
-
-            # takeProfit OR stopLoss clearing : not updated yet
-            #
-            #
-            #
-            #
-            #
-            #
-
-        if not self.check_asset_positive(currentPrice):
-            self.get_log(currentIdx, 'Busted')
+        self.finalReturn = self.get_current_return()
 
     # convert pseudo-condition to REAL condition(usable in python)
     ## make conditions list
     def _make_conditions(self, currentIdx, conditions):
         real_conditions = []
         for p_cond in conditions:
-            real_cond = self._make_real_condition(p_cond, currentIdx)
+            real_cond = self._make_real_condition(currentIdx, p_cond)
             real_conditions.append(real_cond)
         return real_conditions
 
     ## make a pseudo-condition to one real condition
-    def _make_real_condition(self, p_cond, currentIdx):
+    def _make_real_condition(self, currentIdx, p_cond):
         indc1, indc2, op, func1, func2, pastIdx = p_cond
 
         # making data1
@@ -233,44 +188,9 @@ class BackTester():
         elif op=='==':
             return data1==data2
 
-
-    ## make a pseudo-condition to one real condition
-    ### 
-    '''
-    def _make_real_condition_DONOTUSE(self, p_cond, currentIdx):
-        func1, indc1, op, func2, indc2, pastIdx = p_cond
-        if indc1=='_varsDict['_short_amount']':
-            data1 = self._varsDict['_short_amount']
-        elif indc1=='_varsDict['_long_amount']':
-            data1 = self._varsDict['_long_amount']
-        elif type(indc1)==type(""):
-            data1 = func1(self.df[indc1][currentIdx-pastIdx])
-        elif type(indc1)==type(0.5):
-            data1 = indc1
-
-        if indc2=='_varsDict['_short_amount']':
-            data2 = self._varsDict['_short_amount']
-        elif indc2=='_varsDict['_long_amount']':
-            data2 = self._varsDict['_long_amount']
-        elif type(indc2)==type(""):
-            data2 = func2(self.df[indc2][currentIdx-pastIdx])
-        elif type(indc2)==type(0.5):
-            data2 = indc2
-
-        if op=='<':
-            return data1<data2
-        elif op=='<=':
-            return data1<=data2
-        elif op=='>':
-            return data1>data2
-        elif op=='>=':
-            return data1>=data2
-        elif op=='==':
-            return data1==data2
-
-    '''
-
     # methods for making indicators.
+    ## 이 아래의 메소드들은 BackTester가 아니라, 일반적인 indicator를 만드는 새로운 class를 정의해서 그 안에 넣어야 하지 않을까?
+    ## 또는 그냥 numpy method에 대한 이해가 있으면 numpy만으로도 충분할 것 같음.
     def get_MA(self, window, closePrice): # closePrice는 데이터프레임에서 만들어져야 하니까. 데이터프레임....이 있어야 하니까. 실제 데이터를 쓰는 BackTester에 있어야?
         indicator = closePrice.astype(np.float64).rolling(window).mean()
         # self.ma[f'MA{window}'] = indicator
@@ -282,6 +202,9 @@ class BackTester():
         return indicator
 
     ## make indicator for yourself.
+    '''
+    이거 정말 필요할까? 안 필요할지도.
+    '''
     ## you have to use your data from DataGen
     def get_own_indicator(self, indicatorName, indicator):
         self.ownInd[indicatorName] = indicator
