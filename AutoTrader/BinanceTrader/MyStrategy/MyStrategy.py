@@ -1,19 +1,4 @@
-import time
-import requests
 import numpy as np
-import pandas as pd
-import logging
-import datetime
-from binance.um_futures import UMFutures
-from binance.websocket.um_futures.websocket_client import UMFuturesWebsocketClient
-from binance.lib.utils import config_logging
-
-# where API KEY stored.(USE YOUR OWN KEY)
-from cert import binanceKey
-
-# visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 # def get_MA(dataDf, window, CloseName='Close'):
@@ -105,9 +90,27 @@ class MyStrategy():
         elif LSC=='stopLoss_short':
             self.stopLoss_short_conditions += conditions
 
-    def add_andCondition(self, func1, indc1, compareOperator, func2, indc2, indices):
-        for idx in indices:
-            self.tmp_conditions.append([func1, indc1, compareOperator, func2, indc2, idx])
+    def add_andCondition(self, indc1Name, indc2Name, compareOperator, indices, **funcs):
+        '''
+        Condition 작성 방법 :
+        indc가 변수라면(index와 상관없는 값), 앞에 언더바를 붙여서 넣기
+        indc가 컬럼이라면(index와 상관있는 값), 앞에 언더바를 붙이지 않고 넣기
+        '''
+        try:
+            func1 = funcs['func1']
+        except:
+            func1 = None
+        
+        try:
+            func2 = funcs['func2']
+        except:
+            func2 = None
+
+        if type(indices)==type(1):
+            self.tmp_conditions.append([indc1Name, indc2Name, compareOperator, func1, func2, indices])
+        else:
+            for idx in indices:
+                self.tmp_conditions.append([indc1Name, indc2Name, compareOperator, func1, func2, idx])
 
     def add_Condition(self, LSC):
         if LSC=='long':

@@ -1,70 +1,91 @@
-import time
-import requests
 import numpy as np
-import pandas as pd
-import logging
-import datetime
-from binance.um_futures import UMFutures
-from binance.websocket.um_futures.websocket_client import UMFuturesWebsocketClient
-from binance.lib.utils import config_logging
-
-# where API KEY stored.(USE YOUR OWN KEY)
-from cert import binanceKey
-
-# visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 class BackTester():
-    def __init__(self, asset=1000, maxLimit=1000): # default asset : 1000 dollars
+    def __init__(self, asset=1000, maxLimit=1000): # default _varsDict['_asset'] : 1000 dollars
+        self._varsDict = dict()
+        self._varsDict['_long_amount'] = 0
+        self._varsDict['_long_meanPrice'] = 0
+        self._varsDict['_long_flag'] = False
+
+        self._varsDict['_short_amount'] = 0
+        self._varsDict['_short_meanPrice'] = 0
+        self._varsDict['_short_flag'] = False
+
+        self._varsDict['_asset'] = asset
+        self.PRINCIPAL = asset
+        self._varsDict['_maxLimit'] = maxLimit
+        self.bustedIndex = 0
+        # var for backdata
+        self.df = None
+        # vars for BackTester variables
+        self._vars = ['_long_amount',
+                      '_long_meanPrice', 
+                      '_long_flag', 
+                      '_short_amount', 
+                      '_short_meanPrice', 
+                      '_short_flag',
+                      '_asset',
+                      '_maxLimit']
+
+        '''
         # vars for long position
-        self.long_amount = 0
-        self.long_meanPrice = 0
-        self.long_flag = False
+        self._varsDict['_long_amount'] = 0
+        self._varsDict['_long_meanPrice'] = 0
+        self._varsDict['_long_flag'] = False
         # vars for short position
-        self.short_amount = 0
-        self.short_meanPrice = 0
-        self.short_flag = False
-        # vars for base asset
-        self.asset = asset
-        self.PRINCIPAL = asset # constant
-        self.maxLimit = maxLimit
+        self._varsDict['_short_amount'] = 0
+        self._varsDict['_short_meanPrice'] = 0
+        self._varsDict['_short_flag'] = False
+        # vars for base _varsDict['_asset']
+        self._varsDict['_asset'] = _varsDict['_asset']
+        self.PRINCIPAL = _varsDict['_asset'] # constant
+        self._varsDict['_maxLimit'] = _varsDict['_maxLimit']
         # var for busted (when did you bust?)
         self.bustedIndex = 0
         # var for backdata
         self.df = None
+        # vars for BackTester variables
+        self._vars = ['_long_amount',
+                      '_long_meanPrice', 
+                      '_long_flag', 
+                      '_short_amount', 
+                      '_short_meanPrice', 
+                      '_short_flag',
+                      '_asset',
+                      '_maxLimit']
+        '''
 
     def _get_tradeAmount(self, tradePrice):
-        tradeAmount = round(self.maxLimit/tradePrice/2, 4)
+        tradeAmount = round(self._varsDict['_maxLimit']/tradePrice/2, 4)
         return tradeAmount
 
     def set_long(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
-        self.maxLimit -= tradeAmount * tradePrice
-        self.long_meanPrice = (self.long_meanPrice*self.long_amount + tradePrice*tradeAmount)/(self.long_amount + tradeAmount) # 이거 맞아?
-        self.long_amount += tradeAmount
-        self.long_flag = True
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_long_meanPrice'] = (self._varsDict['_long_meanPrice']*self._varsDict['_long_amount'] + tradePrice*tradeAmount)/(self._varsDict['_long_amount'] + tradeAmount) # 이거 맞아?
+        self._varsDict['_long_amount'] += tradeAmount
+        self._varsDict['_long_flag'] = True
         return
 
     def set_short(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
-        self.maxLimit -= tradeAmount * tradePrice
-        self.short_meanPrice = (self.short_meanPrice*self.short_amount + tradePrice*tradeAmount)/(self.short_amount + tradeAmount)
-        self.short_amount += tradeAmount
-        self.short_flag = True
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_short_meanPrice'] = (self._varsDict['_short_meanPrice']*self._varsDict['_short_amount'] + tradePrice*tradeAmount)/(self._varsDict['_short_amount'] + tradeAmount)
+        self._varsDict['_short_amount'] += tradeAmount
+        self._varsDict['_short_flag'] = True
         return
 
     def set_clear(self, tradePrice):
-        self.asset -= self.short_amount * (tradePrice - self.short_meanPrice)
-        self.asset += self.long_amount * (tradePrice - self.long_meanPrice)
-        self.short_amount = self.long_amount = self.short_meanPrice = self.long_meanPrice = 0
-        self.long_flag = self.short_flag = False
-        self.maxLimit = self.asset
+        self._varsDict['_asset'] -= self._varsDict['_short_amount'] * (tradePrice - self._varsDict['_short_meanPrice'])
+        self._varsDict['_asset'] += self._varsDict['_long_amount'] * (tradePrice - self._varsDict['_long_meanPrice'])
+        self._varsDict['_short_amount'] = self._varsDict['_long_amount'] = self._varsDict['_short_meanPrice'] = self._varsDict['_long_meanPrice'] = 0
+        self._varsDict['_long_flag'] = self._varsDict['_short_flag'] = False
+        self._varsDict['_maxLimit'] = self._varsDict['_asset']
         return
 
     def check_asset_positive(self, tradePrice):
-        tmpAsset = self.asset - (self.short_amount * (tradePrice - self.short_meanPrice))
-        tmpAsset = self.asset + (self.long_amount * (tradePrice - self.long_meanPrice))
+        tmpAsset = self._varsDict['_asset'] - (self._varsDict['_short_amount'] * (tradePrice - self._varsDict['_short_meanPrice']))
+        tmpAsset = self._varsDict['_asset'] + (self._varsDict['_long_amount'] * (tradePrice - self._varsDict['_long_meanPrice']))
         if tmpAsset < 0:
             return False
         else:
@@ -76,17 +97,17 @@ class BackTester():
         print(f'#########################')
 
         if stateTxt != 'Busted':
-            print(f'long amount:{self.long_amount}')
-            print(f'long meanPrice:{self.long_meanPrice}')
-            print(f'short amount:{self.short_amount}')
-            print(f'short meanPrice:{self.short_meanPrice}')
-            print(f'asset:{self.asset}')
-            print(f'maxLimit:{self.maxLimit}')
+            print('long amount:', self._varsDict['_long_amount'])
+            print('long meanPrice:', self._varsDict['_long_meanPrice'])
+            print('short amount:', self._varsDict['_short_amount'])
+            print('short meanPrice:', self._varsDict['_short_meanPrice'])
+            print('asset:', self._varsDict['_asset'])
+            print('maxLimit:', self._varsDict['_maxLimit'])
             self.bustedIndex = index
 
     def get_current_return(self, index):
-        print(f'**current return : {self.asset/self.PRINCIPAL*100}%')
-        return self.asset / self.PRINCIPAL
+        print('**current return : ', self._varsDict['_asset']/self.PRINCIPAL*100, '%')
+        return self._varsDict['_asset'] / self.PRINCIPAL
 
     def get_commission(self):
         pass
@@ -112,7 +133,7 @@ class BackTester():
             realClearAndConditions = []
             for clear_and_conditions in strategy.clear_conditions:
                 realClearAndConditions.append(all(self._make_conditions(currentIdx, clear_and_conditions)))
-            if any(realClearAndConditions):
+            if any(realClearAndConditions) and (self._varsDict['_long_flag'] or self._varsDict['_short_flag']):
                 self.set_clear(currentPrice)
                 self.get_log(currentIdx, 'clear')
 
@@ -176,20 +197,61 @@ class BackTester():
 
     ## make a pseudo-condition to one real condition
     def _make_real_condition(self, p_cond, currentIdx):
+        indc1, indc2, op, func1, func2, pastIdx = p_cond
+
+        # making data1
+        if indc1 in self._varsDict.keys():
+            data1 = self._varsDict[indc1]
+        elif type(indc1) in [type(1), type(0.5), type(True)]:
+            data1 = indc1
+        else:
+            if func1:
+                data1 = func1(self.df[indc1][currentIdx-pastIdx])
+            else:
+                data1 = self.df[indc1][currentIdx-pastIdx]
+
+        # making data2
+        if indc2 in self._varsDict.keys():
+            data2 = self._varsDict[indc2]
+        elif type(indc2) in [type(1), type(0.5), type(True)]:
+            data2 = indc2
+        else:
+            if func2:
+                data2 = func2(self.df[indc2][currentIdx-pastIdx])
+            else:
+                data2 = self.df[indc2][currentIdx-pastIdx]
+
+        # making condition using data1, data2 and comparing operator.
+        if op=='<':
+            return data1<data2
+        elif op=='<=':
+            return data1<=data2
+        elif op=='>':
+            return data1>data2
+        elif op=='>=':
+            return data1>=data2
+        elif op=='==':
+            return data1==data2
+
+
+    ## make a pseudo-condition to one real condition
+    ### 
+    '''
+    def _make_real_condition_DONOTUSE(self, p_cond, currentIdx):
         func1, indc1, op, func2, indc2, pastIdx = p_cond
-        if indc1=='short_amount':
-            data1 = self.short_amount
-        elif indc1=='long_amount':
-            data1 = self.long_amount
+        if indc1=='_varsDict['_short_amount']':
+            data1 = self._varsDict['_short_amount']
+        elif indc1=='_varsDict['_long_amount']':
+            data1 = self._varsDict['_long_amount']
         elif type(indc1)==type(""):
             data1 = func1(self.df[indc1][currentIdx-pastIdx])
         elif type(indc1)==type(0.5):
             data1 = indc1
 
-        if indc2=='short_amount':
-            data2 = self.short_amount
-        elif indc2=='long_amount':
-            data2 = self.long_amount
+        if indc2=='_varsDict['_short_amount']':
+            data2 = self._varsDict['_short_amount']
+        elif indc2=='_varsDict['_long_amount']':
+            data2 = self._varsDict['_long_amount']
         elif type(indc2)==type(""):
             data2 = func2(self.df[indc2][currentIdx-pastIdx])
         elif type(indc2)==type(0.5):
@@ -206,7 +268,7 @@ class BackTester():
         elif op=='==':
             return data1==data2
 
-
+    '''
 
     # methods for making indicators.
     def get_MA(self, window, closePrice): # closePrice는 데이터프레임에서 만들어져야 하니까. 데이터프레임....이 있어야 하니까. 실제 데이터를 쓰는 BackTester에 있어야?

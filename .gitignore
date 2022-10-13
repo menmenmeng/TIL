@@ -15,3 +15,4 @@ AutoTrader/binance-futures-trader/binance_ftrs_venv
 # BFC_um-futures(HTTP).md
 binance_backtesting.ipynb
 *.pkl
+binance_backtesting_useclass.txt
