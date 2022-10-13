@@ -8,7 +8,7 @@ import numpy as np
 #     return dataDf[CloseName].astype(np.float64).rolling(window).std()
 
 
-class MyStrategy():
+class StrategyArchive():
     def __init__(self, oldest=4, newest=0):
         # How many data will you use?
         self.oldest = oldest
@@ -93,8 +93,14 @@ class MyStrategy():
     def add_andCondition(self, indc1Name, indc2Name, compareOperator, indices, **funcs):
         '''
         Condition 작성 방법 :
-        indc가 변수라면(index와 상관없는 값), 앞에 언더바를 붙여서 넣기
-        indc가 컬럼이라면(index와 상관있는 값), 앞에 언더바를 붙이지 않고 넣기
+        indicator1, indicator2, compare_operator, indices, **funcs
+        indicator1, indicator2 : 비교하고 싶은 지표
+        compare_operator : indicator1과 indicator2의 사이에 들어갈 비교연산자
+        indices : n(=int)를 넣으면 현재시점-n번째의 데이터를 이용해 조건을 생성
+                : l(=list)를 넣으면 현재시점-l0 ~ 현재시점-l1까지의 데이터를 모두 사용해 여러 조건을 생성
+        **funcs : indicator1, indicator2에 임의로 조정을 가하여 조건을 만들고 싶을 때 사용.
+                : func1, func2의 인자 이름으로 들어가야 함. 만약 인자로 들어온다면, indicator1, indicator2는
+                : func1(indicator1), func2(indicator2)의 값으로서 비교될 것.
         '''
         try:
             func1 = funcs['func1']
@@ -109,7 +115,7 @@ class MyStrategy():
         if type(indices)==type(1):
             self.tmp_conditions.append([indc1Name, indc2Name, compareOperator, func1, func2, indices])
         else:
-            for idx in indices:
+            for idx in range(indices[0], indices[1]+1):
                 self.tmp_conditions.append([indc1Name, indc2Name, compareOperator, func1, func2, idx])
 
     def add_Condition(self, LSC):

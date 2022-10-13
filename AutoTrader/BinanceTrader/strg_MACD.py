@@ -14,7 +14,7 @@ from cert import binanceKey
 # my own library
 from backTester.BackTester import BackTester
 from backTester.GenBackData import BackData
-from MyStrategy.MyStrategy import MyStrategy
+from strategyArchive.StrategyArchive import StrategyArchive
 
 # visualization
 import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ tester = BackTester()
 backdata['MA1'] = tester.get_MA(10, backdata['Close'])
 backdata['MA2'] = tester.get_MA(30, backdata['Close'])
 
-myStrg = MyStrategy(3, 0) # i-4, i-3, i-2, i-1, i
+myStrg = StrategyArchive(3, 0) # i-4, i-3, i-2, i-1, i
 
 myStrg.add_andCondition('MA1', 'MA2', '<', 3)
 myStrg.add_andCondition('MA1', 'MA2', '>', 2, func1=lambda x:x*0.9999)
