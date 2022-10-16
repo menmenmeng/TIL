@@ -18,3 +18,5 @@ AutoTrader/binance-futures-trader/binance_ftrs_venv
 binance_backtesting.ipynb
 *.pkl
 binance_backtesting_useclass.txt
+
+Results22*

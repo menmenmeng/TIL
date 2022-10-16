@@ -1,16 +1,6 @@
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
-def ms2dt(ms):
-    return datetime.fromtimestamp(ms/1000)
-
-def dt2ms(*dt):
-    try:
-        res = int(round(datetime.timestamp(datetime(*dt))*1000, -3))
-    except:
-        res = int(round(datetime.timestamp(*dt)*1000, -3))
-    return res
 
 # need to be modified.
 class BackDataLoader():
@@ -49,7 +39,7 @@ class BackDataLoader():
         elif limit and limit>1500:
             df = pd.DataFrame()
             for chunk_id in range(limit//1500):
-                if chunk_id < limit//1500:
+                if chunk_id < limit//1500-1:
                     loadLimit = 1500
                     tmp_df = self.get_data_chunk(interval, startTime=startTime, limit=loadLimit)
 
