@@ -13,8 +13,8 @@ from cert import binanceKey
 
 # my own library
 from backTester.BackTester import BackTester
-from backTester.GenBackData import BackData
-from strategyArchive.StrategyArchive import StrategyArchive
+from backTester.BackDataLoader import BackDataLoader
+from conditionGenerator.ConditionGenerator import ConditionGenerator
 
 # visualization
 import matplotlib.pyplot as plt
@@ -68,7 +68,7 @@ backdata['ER'] = backdata['Close'].diff(window_ER).abs()/backdata['Close'].diff(
 
 backdata['ERmean'] = backdata['ER'].mean()*1.5
 
-myStrg = StrategyArchive(19, 0) # i-4, i-3, i-2, i-1, i
+myStrg = ConditionGenerator(19, 0) # i-4, i-3, i-2, i-1, i
 
 '''
 횡보장에서 Close가 LB를 터치했다가 되돌아 올 경우, 롱 포지션

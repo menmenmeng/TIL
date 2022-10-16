@@ -19,6 +19,8 @@ class BackTester():
         self._varsDict['_maxLimit'] = maxLimit
         # var for basis of your wallet.
         self.PRINCIPAL = asset
+        # num of trading
+        self.trFreq = 0
         # if your wallet busted, when did you busted?
         self.bustedIndex = 0
 
@@ -41,6 +43,7 @@ class BackTester():
         self._varsDict['_long_meanPrice'] = (self._varsDict['_long_meanPrice']*self._varsDict['_long_amount'] + tradePrice*tradeAmount)/(self._varsDict['_long_amount'] + tradeAmount) # 이거 맞아?
         self._varsDict['_long_amount'] += tradeAmount
         self._varsDict['_long_flag'] = True
+        self.trFreq += 1
         return
 
     # short positioning
@@ -50,6 +53,7 @@ class BackTester():
         self._varsDict['_short_meanPrice'] = (self._varsDict['_short_meanPrice']*self._varsDict['_short_amount'] + tradePrice*tradeAmount)/(self._varsDict['_short_amount'] + tradeAmount)
         self._varsDict['_short_amount'] += tradeAmount
         self._varsDict['_short_flag'] = True
+        self.trFreq += 1
         return
 
     # clearing. 
@@ -59,6 +63,7 @@ class BackTester():
         self._varsDict['_short_amount'] = self._varsDict['_long_amount'] = self._varsDict['_short_meanPrice'] = self._varsDict['_long_meanPrice'] = 0
         self._varsDict['_long_flag'] = self._varsDict['_short_flag'] = False
         self._varsDict['_maxLimit'] = self._varsDict['_asset']
+        self.trFreq += 1
         return
 
     # check asset positive. if asset < 0, you will receive "Busted" message.
