@@ -18,7 +18,7 @@ class ConditionGenerator():
         Condition 작성 방법 :
         indicator1, indicator2, compare_operator, indices, **funcs
         indicator1, indicator2 : 비교하고 싶은 지표
-        compare_operator : indicator1과 indicator2의 사이에 들어갈 비교연산자
+        compare_operator : indicator1과 indicator2의 사이에 들어갈 비교연산자(<, >, <=, >=, ==)
         indices : n(=int)를 넣으면 현재시점-n번째의 데이터를 이용해 조건을 생성
                 : l(=list)를 넣으면 현재시점-l0 ~ 현재시점-l1까지의 데이터를 모두 사용해 여러 조건을 생성
         **funcs : indicator1, indicator2에 임의로 조정을 가하여 조건을 만들고 싶을 때 사용.

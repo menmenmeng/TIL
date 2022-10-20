@@ -1,7 +1,7 @@
 from datetime import datetime
 import math
 
-# def f22i(numFloat): # float to double ints
+# def f22i(numFloat): # float to two ints' linear combination
 #     if numFloat%1==0:
 #         return numFloat, numFloat
 #         # if res[0] == res[1], use this result.(calculation :  "returnFunction(f) = return")

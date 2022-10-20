@@ -1,3 +1,4 @@
+from email import feedparser
 import numpy as np
 
 class BackTester():
@@ -39,7 +40,7 @@ class BackTester():
     # long positioning
     def set_long(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
-        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice + self.get_fee(tradeAmount, tradePrice)
         self._varsDict['_long_meanPrice'] = (self._varsDict['_long_meanPrice']*self._varsDict['_long_amount'] + tradePrice*tradeAmount)/(self._varsDict['_long_amount'] + tradeAmount) # 이거 맞아?
         self._varsDict['_long_amount'] += tradeAmount
         self._varsDict['_long_flag'] = True
@@ -49,7 +50,7 @@ class BackTester():
     # short positioning
     def set_short(self, tradePrice):
         tradeAmount = self._get_tradeAmount(tradePrice)
-        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice + self.get_fee(tradeAmount, tradePrice)
         self._varsDict['_short_meanPrice'] = (self._varsDict['_short_meanPrice']*self._varsDict['_short_amount'] + tradePrice*tradeAmount)/(self._varsDict['_short_amount'] + tradeAmount)
         self._varsDict['_short_amount'] += tradeAmount
         self._varsDict['_short_flag'] = True
@@ -58,6 +59,40 @@ class BackTester():
 
     # clearing. 
     def set_clear(self, tradePrice):
+        shortAmount = self._varsDict['_short_amount']
+        longAmount = self._varsDict['_long_amount']
+        self._varsDict['_asset'] -= shortAmount * (tradePrice - self._varsDict['_short_meanPrice'])
+        self._varsDict['_asset'] -= self.get_fee(shortAmount, tradePrice) # calculate fee.
+        self._varsDict['_asset'] += longAmount * (tradePrice - self._varsDict['_long_meanPrice'])
+        self._varsDict['_asset'] -= self.get_fee(longAmount, tradePrice) # calculate fee.
+        self._varsDict['_short_amount'] = self._varsDict['_long_amount'] = self._varsDict['_short_meanPrice'] = self._varsDict['_long_meanPrice'] = 0
+        self._varsDict['_long_flag'] = self._varsDict['_short_flag'] = False
+        self._varsDict['_maxLimit'] = self._varsDict['_asset']
+        self.trFreq += 1
+        return
+
+    # long positioning : Dismiss fee calculating.
+    def set_long_NOTFEE(self, tradePrice):
+        tradeAmount = self._get_tradeAmount(tradePrice)
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_long_meanPrice'] = (self._varsDict['_long_meanPrice']*self._varsDict['_long_amount'] + tradePrice*tradeAmount)/(self._varsDict['_long_amount'] + tradeAmount) # 이거 맞아?
+        self._varsDict['_long_amount'] += tradeAmount
+        self._varsDict['_long_flag'] = True
+        self.trFreq += 1
+        return
+
+    # short positioning : Dismiss fee calculating.
+    def set_short_NOTFEE(self, tradePrice):
+        tradeAmount = self._get_tradeAmount(tradePrice)
+        self._varsDict['_maxLimit'] -= tradeAmount * tradePrice
+        self._varsDict['_short_meanPrice'] = (self._varsDict['_short_meanPrice']*self._varsDict['_short_amount'] + tradePrice*tradeAmount)/(self._varsDict['_short_amount'] + tradeAmount)
+        self._varsDict['_short_amount'] += tradeAmount
+        self._varsDict['_short_flag'] = True
+        self.trFreq += 1
+        return
+
+    # clearing.  : Dismiss fee calculating.
+    def set_clear_NOTFEE(self, tradePrice):
         self._varsDict['_asset'] -= self._varsDict['_short_amount'] * (tradePrice - self._varsDict['_short_meanPrice'])
         self._varsDict['_asset'] += self._varsDict['_long_amount'] * (tradePrice - self._varsDict['_long_meanPrice'])
         self._varsDict['_short_amount'] = self._varsDict['_long_amount'] = self._varsDict['_short_meanPrice'] = self._varsDict['_long_meanPrice'] = 0
@@ -94,8 +129,15 @@ class BackTester():
         # print('**current return : ', self._varsDict['_asset']/self.PRINCIPAL*100, '%')
         return self._varsDict['_asset'] / self.PRINCIPAL
 
-    def get_commission(self):
-        pass
+    def get_fee(self, tradeAmount, tradePrice, TB = 'T'):
+        market = 0.04
+        limit = 0.02
+        if TB == 'T':
+            rate = market
+        else:
+            rate = limit
+        fee = tradeAmount * rate * tradePrice
+        return fee
 
     # backtesting code with own strategy
     ## strategy Instance, DataGen Instance가 전부 정의되어 있어야 함.
