@@ -1,5 +1,6 @@
 _etc
 _data-examples
+_data*
 AutoTrader/cert
 AutoTrader/binance-futures-trader/binance_ftrs_venv
 # AutoTrader/BinanceTrader/strategy
@@ -23,3 +24,6 @@ Results22*
 
 Algo_Study.md
 *zzz_subin_torch_hw_202211/
+
+_kakao_internship_*
+_data_dacon_*
