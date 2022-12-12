@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Home - My first website.</title>
+        <link href="styles.css" rel="stylesheet" />
+        <style>
+            * {
+                border : 2px solid black;
+            }
+            html {
+                background-color: tomato;
+            }
+            body {
+                margin: 20px;
+                padding: 20px;
+                background-color: thistle;
+            }
+            div {
+                padding : 20px;
+                border : 2px solid black; 
+            }
+            #first { 
+                height: 150px;
+                width: 150px;
+                background-color: whitesmoke;
+            }
+            #second {
+                height: 100px;
+                width: 100px;
+                background-color: teal;
+            }
+            #third {
+                height: 50px;
+                width: 50px;
+                background-color: wheat;
+            }
+            #fourth {
+                height: 25px;
+                width: 25px;
+                background-color: blanchedalmond;
+            }
+            /* div는 어디에 적용되나요? 밑에 div가 세 개 있는데, 세 개 모두에 적용될 거다. */
+        </style>
+    </head>
+
+    <body>
+        <div id="first">
+            <div id="second">
+                <div id="third">
+                    <div id="fourth">
+                        <span>hello</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
