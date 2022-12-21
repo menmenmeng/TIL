@@ -50,7 +50,7 @@ def routine2():
 
 ### 이터러블, 이터레이터, 제너레이터
 
-[image](https://nvie.com/img/relationships.png)
+![image](https://nvie.com/img/relationships.png){:.lead loading="lazy"}
 
 - 제너레이터 기반의 코루틴과 async def로 만든 코루틴을 구분하는 이유.
 
