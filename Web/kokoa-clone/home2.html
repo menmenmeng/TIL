@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>My Second Page - MenMenMeng</title>
+        <link href="styles.css" rel="stylesheet" />
+        <style>
+            body {
+                height: 1000vh;
+                margin: 20px;
+            }
+            span {
+                background-color: yellowgreen;
+            }
+            div > span {
+                padding: 5px;
+                border-radius: 10px;
+            }
+            p span {
+                color: white;
+            }
+            p + span {
+                text-decoration: underline;
+            }
+            p ~ span {
+                text-decoration: underline;
+            }
+            input {
+                border: 1px solid wheat
+            }
+            input:required {
+                border-color: tomato;
+            }
+            input[placeholder~="name"] {
+                background-color: pink;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <form>
+                <input type="text" placeholder="First name" />
+                <input type="text" placeholder="Last name" />
+                <input type="password" required placeholder="password" />
+            </form>
+        </div>
+    </body>
+</html>
