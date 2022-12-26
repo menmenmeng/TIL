@@ -127,3 +127,86 @@ def myGenerator(start, end):
 여러 작업을 처리하도록 예약한 뒤에, 작업이 끝나면 결과를 받는 방식. 실행한 순서대로 진행되는 게 아니라 각자의 우선순위에 따라 일시정지하고 다른 coroutine을 돌린다.
 
 ## asyncio
+
+### asyncio의 두 가지 많이 쓰이는(것 같은) 메소드
+
+1. async def main()
+2. await
+
+async def main() : 비동기 프로그래밍 작성의 기본이다.
+
+async함수는 await에서 suspend되고, await대상의 값이 준비되면 resume되어 실행을 이어나간다.
+
+코루틴 함수 : async def 함수.
+
+코루틴 객체 : 코루틴 함수를 호출하여 반환된 객체.
+
+
+asyncio.run(main())을 통해 main 코루틴 객체를 실행할 수 있다. asyncio.run()은 항상 새로운 이벤트 루프를 만들고, 코루틴을 실행한 뒤 끝에 이벤트 루프를 닫는다.
+
+여기서 중요한 점, jupyter는 시작할 때부터 이미 디폴트의 이벤트 루프를 가지고 있다. 이벤트 루프는 꼭 한 번에 하나만 돌아갈 수 있고, 그래서 우리는 jupyter상에서는 run()을 하면 오류가 나게 됨.
+
+jupyter가 이미 event loop 를 돌리고 있으므로, 우리가 만든 async def main() 의 main() 함수를 돌리려면 await main()을 하면 된다. (
+
+await을 만나면 loop은 await 대상의 값이 준비될 때까지 suspend되고, 그 다음에 값이 준비 되면 resume된다.
+
+
+await 뒤에 쓰일 수 있는 객체를 awaitable 객체라고 함. awaitable 객체에는 코루틴(async로 선언된 함수), 태스크, 퓨처가 있다.
+
+코루틴의 생성과 실행.... 코루틴이 생성되는 건 async로 선언된 함수를 실행하기만 하면 되는 것 같음. 이런 경우 코루틴이 생성되지만, 함수가 실행되지는 않는다..
+
+태스크는 asyncio.create_task() 함수로 감싸서, 코루틴이 실행되도록 예약된다. 그리고 task 객체를 반환. 코루틴이 동시에 실행되도록 예약할 때 사용된다...
+
+코루틴을 그냥 실행하는 것과, 태스크로 만들어서 실행하는 것의 차이를 보여주는 두 가지 예시.
+
+#### 코루틴 실행
+
+~~~python
+import asyncio, time
+async def say_after(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+async def main():
+    print(f"started at {time.strftime('%X')}")
+    await say_after(1, 'hello')
+    await say_after(2, 'world')
+    print(f"finished at {time.strftime('%X')}")
+asyncio.run(main())
+~~~
+
+await이 say_after()의 값이 나올 때까지 기다린다(1초) ->
+await이 say_after()의 값이 나올 때까지 기다린다(2초)
+
+합 3초 동안 main이 돌아감.
+
+
+#### 태스크 실행
+
+~~~python
+import asyncio, time
+async def say_after(delay, what):
+    await asyncio.sleep(delay)
+    print(what)
+async def main():
+    task1 = asyncio.create_task(say_after(1, 'hello'))
+    task2 = asyncio.create_task(say_after(2, 'world'))
+    print(f"started at {time.strftime('%X')}")
+    await task1
+    await task2
+    print(f"finished at {time.strftime('%X')}")
+asyncio.run(main())
+~~~
+
+await이 task1의 값이 나올 때까지 기다린다 (task1은 say_after라는 코루틴을 돌리기로 예약된 상태 자체를 반환함.)
+반환되었으니,
+
+await이 다시 task2의 값이 나올 때까지 기다린다.
+
+create_task로 만들어지는 태스크는 비동기 작업 객체이다. 따라서, 두 개의 코루틴을 동시에 돌리고 싶다면 create_task를 통해 task로 만들어준 뒤에 활용해야 함.
+
+
+궁금한 점... 어쨌든 노트북의 프로세서는 하나만 있지 않나. 프로세서가 하나뿐인데 파이썬 위에서 비동기 객체를 만들어서 돌린다고 해서 이게 동시에 돌아갈 수가 있는 거야?
+
+노트북의 프로세서가 몇 개인가. 16개인데 어떻게 24개, 30개 이상이 계속해서 돌아갈 수 있는 건지는 모르겠음.
+
+아무튼, 비동기 프로그래밍이 가능함.
