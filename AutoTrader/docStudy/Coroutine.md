@@ -133,7 +133,7 @@ def myGenerator(start, end):
 1. async def main()
 2. await
 
-async def main() : 비동기 프로그래밍 작성의 기본이다.
+async def main() : 비동기 프로그래밍 작성의 기본이다. async def를 통해 구현된 함수는 코루틴이라고 부른다.
 
 async함수는 await에서 suspend되고, await대상의 값이 준비되면 resume되어 실행을 이어나간다.
 
@@ -209,4 +209,4 @@ create_task로 만들어지는 태스크는 비동기 작업 객체이다. 따�
 
 노트북의 프로세서가 몇 개인가. 16개인데 어떻게 24개, 30개 이상이 계속해서 돌아갈 수 있는 건지는 모르겠음.
 
-아무튼, 비동기 프로그래밍이 가능함.
+아무튼, 비동기 프로그래밍이 가능함. task를 활용해서, 실시간 트레이더를 만들 수 있을 것 같다.
