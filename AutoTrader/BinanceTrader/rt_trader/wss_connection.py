@@ -1,11 +1,14 @@
 import asyncio
 import websockets
 import json
+import requests
 from cert import binanceKey
+from cert import myvars
 
-rest_test = "https://testnet.binancefuture.com"
-webs_test = "wss://stream.binancefuture.com"
-webs_base = "wss://fstream.binance.com"
+rest_test = myvars.rest_test
+rest_base = myvars.rest_base
+webs_test = myvars.webs_test
+webs_base = myvars.webs_base
 
 strmNm_aggTrade = "btcusdt@aggTrade"
 strmNm_markPrice = "btcusdt@markPrice"
@@ -120,7 +123,7 @@ param = get_stream_params(stream1, stream2)
 connection_url = get_connecting_url(baseUrl, stream1, stream2)
 
 # 5. Define function to connect websocket, and send params.
-async def connect(url, param):
+async def connect_recvdata(url, param):
     async with websockets.connect(url) as websocket:
 
         senddata = {"method":"SUBSCRIBE","params":param,"id":1}
@@ -133,7 +136,8 @@ async def connect(url, param):
             print(result)
 
 # Run devil run
-asyncio.run(connect(connection_url, param))
+def run_part2():
+    asyncio.run(connect_recvdata(connection_url, param))
 
 # END PART 2
 # : Connecting Websocket and receive data you want to browse.
@@ -143,6 +147,21 @@ asyncio.run(connect(connection_url, param))
 
 # START PART 3 (not completed)
 # : Connecting Websocket, receive data AND conduct buy/sell method.
+
+# 1. Choose baseUrl from variables below. (REST)
+baseUrl = rest_test
+'''
+  1) rest_test : testnet for REST
+  2) rest_base : baseurl for REST
+'''
+
+# 2. Start user data stream.
+url = baseUrl + "/fapi/v1/listenKey"
+# listenKey_post_request = requests.post(url, params=)
+
+
+
+
 
 # 1. Choose baseUrl from variables below.
 baseUrl = webs_test
@@ -180,3 +199,11 @@ asyncio.run(connect(connection_url, param))
 
 # END PART 3 (not completed)
 # : Connecting Websocket, receive data AND conduct buy/sell method.
+
+
+
+
+# Conducting Part
+if __name__=="__main__":
+    run_part2()
+    
