@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import json
 import requests
+from pprint import pprint
 from cert import binanceKey
 from cert import myvars
 
@@ -18,6 +19,7 @@ strmNm_markPrice = "btcusdt@markPrice"
 
 # START PART 1
 # : Defining useful functions part for connecting websocket.
+# *Created in seperate file. #
 
 
 def get_streamName(symbol:str, event:str) -> str:
@@ -146,18 +148,21 @@ def run_part2():
 
 
 # START PART 3 (not completed)
+
+# *created in another file seperately.* #
+
 # : Connecting Websocket, receive data AND conduct buy/sell method.
 
-# 1. Choose baseUrl from variables below. (REST)
-baseUrl = rest_test
-'''
-  1) rest_test : testnet for REST
-  2) rest_base : baseurl for REST
-'''
+# # 1. Choose baseUrl from variables below. (REST)
+# baseUrl = rest_test
+# '''
+#   1) rest_test : testnet for REST
+#   2) rest_base : baseurl for REST
+# '''
 
-# 2. Start user data stream.
-url = baseUrl + "/fapi/v1/listenKey"
-# listenKey_post_request = requests.post(url, params=)
+# # 2. Start user data stream.
+# url = baseUrl + "/fapi/v1/listenKey"
+# # listenKey_post_request = requests.post(url, params=)
 
 
 
@@ -174,15 +179,16 @@ baseUrl = webs_test
 # 2. Get every stream name you want to recv data.
 stream1 = get_streamName('btcusdt', 'aggTrade')
 stream2 = get_streamName('btcusdt', 'markPrice')
+stream3 = get_streamName('btcusdt', 'depth10')
 
 # 3. Get param string (or list) you want to recv data.
-param = get_stream_params(stream1, stream2)
+param = get_stream_params(stream1, stream2, stream3)
 
 # 4. Get final connection url.
-connection_url = get_connecting_url(baseUrl, stream1, stream2)
+connection_url = get_connecting_url(baseUrl, stream1, stream2, stream3)
 
 # 5. Define function to connect websocket, and send params.
-async def connect(url, param):
+async def connect_data(url, param):
     async with websockets.connect(url) as websocket:
 
         senddata = {"method":"SUBSCRIBE","params":param,"id":1}
@@ -192,10 +198,32 @@ async def connect(url, param):
 
         while True:
             result = await websocket.recv()
-            print(result)
+            result_json = json.loads(result)
+
+            # different part start.
+            try :
+                result_stream = result_json["stream"]
+            except:
+                print(result)
+                continue
+
+            if result_stream==stream1: # aggTrade
+                print("# Stream Name: ", stream1)
+                pprint(result_json["data"])
+
+            elif result_stream==stream2: # markPrice
+                print("# Stream Name: ", stream2)
+                pprint(result_json["data"])
+
+            elif result_stream==stream3: # depth10
+                print("# Stream Name: ", stream3)
+                pprint(result_json["data"])
+
+            # print(result)
 
 # Run devil run
-asyncio.run(connect(connection_url, param))
+def run_part3():
+    asyncio.run(connect_data(connection_url, param))
 
 # END PART 3 (not completed)
 # : Connecting Websocket, receive data AND conduct buy/sell method.
@@ -205,5 +233,5 @@ asyncio.run(connect(connection_url, param))
 
 # Conducting Part
 if __name__=="__main__":
-    run_part2()
+    run_part3()
     
