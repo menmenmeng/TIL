@@ -1,0 +1,149 @@
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from binance.error import ClientError
+from cert.myfuncs import *
+
+endTime_datetime = datetime.now()
+endTime = endTime_datetime.timestamp()*1000
+endTime_sec = int(endTime_datetime.timestamp())*1000
+
+class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 곳. + 실시간 트레이더가 진행되기 전, 필요한 것들을 제공하는 함수까지
+    def __init__(self, UMclient):
+        self.client = UMclient
+        self.symbol = "BTCUSDT"
+        self.pre_kline = None
+        self.pre_rvs = None
+        self.listenKey = None
+
+    '''
+    <xxx_listenKey methods>
+    - get new listenKey, or renew, close listenKey.
+
+    <getData_XXX methods>
+    - get data, which is not used as input of other Classes. Just for check data or backtest strategy.
+
+    <getInfo_XXX methods>
+    - get data, which is used as input of other Classes, like Prelim, Collector, Trader.
+    '''
+
+    def new_listenKey(self):
+        listenKey = self.client.new_listen_key()["listenKey"]
+        self.listenKey = listenKey
+        return listenKey
+
+    def close_listenKey(self):
+        print(self.client.close_listen_key(self.listenKey))
+
+    def renew_listenKey(self):
+        print(self.client.renew_listen_key(self.listenKey))
+
+
+
+    def getData_account(self):
+        try:
+            response = self.client.account(recvWindow=6000)
+            assets = response["assets"]
+            positions = response["positions"]
+
+            for asset_info in assets:
+                if asset_info["asset"]=="USDT":
+                    asset_USDT = asset_info
+            
+            for position_info in positions:
+                if position_info["symbol"]=="BTCUSDT":
+                    position_BTCUSDT = position_info
+
+            return asset_USDT, position_BTCUSDT
+
+        except ClientError as error:
+            "Found error. status: {}, error code: {}, error message: {}".format(
+                error.status_code, error.error_code, error.error_message
+            )
+    
+
+    def getData_OHLCV(self, interval, limit): # limit should be under 1500
+        if limit > 1500:
+            print("limit should be under 1500. pre_getKline function is not triggered.")
+            return None
+        else:
+            json_kline = self.client.klines(self.symbol, interval, limit=limit)
+
+            columns = ['OpenTime', 'Open', 'High', 'Low', 'Close', 'Volume', 'CloseTime', 'QuoteAssetVolume', 'NumOfTrades',
+                    'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume', 'Ignore']
+
+            df_kline = pd.DataFrame(json_kline, columns=columns)
+            df_kline['OpenTime'] = df_kline['OpenTime'].astype("datetime64[ms]")
+            df_kline['CloseTime'] = df_kline['CloseTime'].astype("datetime64[ms]")
+            df_kline[['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']] = df_kline[['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']].astype('float64')
+            df_kline.drop(['Ignore'], axis=1, inplace=True)
+
+            self.pre_kline = df_kline
+            return df_kline
+
+
+    def getData_vol(self, window):
+        pre_kline = self.pre_getOHLCV('1m', 480)
+        sr_kline_close = pre_kline['Close'].astype(float)
+        rvs = log_return(sr_kline_close).rolling(window=window).apply(realized_volatility)
+
+        self.pre_rvs = rvs
+        return rvs
+
+
+    def getInfo_account(self, verbose=False): # information needed for realtime Trading.
+        asset_USDT, position_BTCUSDT = self.pre_getAccount()
+        current_asset = float(asset_USDT['walletBalance'])
+        positionAmt, entryPrice = float(position_BTCUSDT['positionAmt']), float(position_BTCUSDT['entryPrice'])
+        if verbose:
+            print("- current Asset            : ", current_asset)
+            print("- current position Amount  : ", positionAmt)
+            print("- entry Price              : ", entryPrice)
+        return current_asset, positionAmt, entryPrice
+
+
+    def getInfo_streams(self, symbol, *streamKeys):
+        '''
+        Auto-generate streamValues(like "btcusdt@markPrice@1s") with streamKeys, and return streamDict.
+        You can use this return dictionary as input of Trader instance.
+        Must receive valid parameters, and valid parameters are presented below.
+
+        - valid parameter form.
+            symbol = "btcusdt"
+            streamKeys = [
+                "markPrice1s",
+                "aggTrade",
+                "userData",
+                ...
+            ]
+
+        - markPrice should have interval information at the last of key string. (1s or 3s)
+
+        - available streamKeys list. (will be updated.)
+          - "markPrice1s"   : "<symbol>@markPrice@1s"
+          - "markPrice3s"   : "<symbol>@markPrice@3s"
+          - "aggTrade"      : "<symbol>@aggTrade"
+          - "userData"      : "<listenKey>"     (<listenKey> will be auto-generated by self.new_listenKey().)
+
+        '''
+        streamDict = dict()
+        for key in streamKeys:
+            if key == "markPrice1s":
+                streamDict[key] = symbol + "@markPrice@1s"
+            elif key == "markPrice3s":
+                streamDict[key] = symbol + "@markPrice@3s"
+            elif key == "aggTrade":
+                streamDict[key] = symbol + "@aggTrade"
+            elif key == "userData":
+                if self.listenKey :
+                    streamDict[key] = self.listenKey
+                else:
+                    self.new_listenKey()
+                    streamDict[key] = self.listenKey
+        return streamDict
+
+
+    def getInfo_trade(self, symbol, *streamKeys): ## send to trader.
+        current_asset, positionAmt, entryPrice = self.getInfo_account()
+        streamDict = self.getInfo_streams(symbol, *streamKeys)
+        return current_asset, positionAmt, entryPrice, streamDict

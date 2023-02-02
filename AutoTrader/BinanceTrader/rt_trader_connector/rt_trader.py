@@ -42,8 +42,8 @@ predata = DataPrelim(um_futures_client)
 
 listenKey = predata.new_listenKey()
 asset_USDT, position_BTCUSDT = predata.get_account()
-current_asset = asset_USDT['walletBalance']
-positionAmt, entryPrice = position_BTCUSDT['positionAmt'], position_BTCUSDT['entryPrice']
+current_asset = float(asset_USDT['walletBalance'])
+positionAmt, entryPrice = float(position_BTCUSDT['positionAmt']), float(position_BTCUSDT['entryPrice'])
 
 
 
@@ -76,7 +76,11 @@ stream = [
 
 
 
-
+def message_handler(message):
+    with open("streamDataExample.txt", 'a') as f:
+        f.write(str(message))
+        f.write('\n')
+    print(message)
 
 # defining stream data collector
 
@@ -91,10 +95,10 @@ my_client.start()
 my_client.live_subscribe(
     stream=stream,
     id=1,
-    callback=trader.callback,
+    callback=message_handler,
 )
 try:
-    time.sleep(15)
+    time.sleep(40)
 except KeyboardInterrupt:
     my_client.stop()
 
