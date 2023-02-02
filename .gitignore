@@ -5,6 +5,7 @@ AutoTrader/cert
 AutoTrader/binance-futures-trader/binance_ftrs_venv
 # AutoTrader/BinanceTrader/strategy
 *cert*
+*testFiles*
 *test.py
 *test.ipynb
 /Python/test.ipynb
