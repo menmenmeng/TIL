@@ -1,35 +1,35 @@
 import numpy as np
-import time
+import pandas as pd
 from cert.myfuncs import *
+import logging
 
-class Conditional():
+class KlineConditional():
     def __init__(self):
-        self.openLong = False
-        self.openShort = False
-        self.closeLong = False
-        self.closeShort = False
+        # 1 minute candle chart
+        self.ohlcv = None
+        self.opens = None
+        self.highs = None
+        self.lows = None
+        self.closes = None
+        self.volumes = None
+
+        # 250ms candlestick realTime update
+        self.rt_ohlcv = None
+        self.rt_open = None
+        self.rt_high = None
+        self.rt_low = None
+        self.rt_close = None
+        self.rt_volume = None
 
 
-    def cutArray(self, array, timeLimit):
-        try:
-            res = array[len(array)-timeLimit:]
-        except:
-            res = array
-        return res
-
-
-    def returnConds(self):
-        return self.openLong, self.openShort, self.closeLong, self.closeShort
-    
-
-
-class BBConditional(Conditional):
+class BBConditional(KlineConditional):
     '''
-    Bollinger Band breakthrough condition.
+    BB와 관련된 condition들을 반환하는 class
     '''
     def __init__(self):
         super().__init__()
-        self.markPrices = None
+
+        # Bollinger band indicator
         self.upperBand = None
         self.upperInter = None
         self.centerLine = None
@@ -37,227 +37,152 @@ class BBConditional(Conditional):
         self.lowerBand = None
 
 
-    def _calculateInds(self, markPriceDf, window):
-        markPrices = markPriceDf['markPrice']
-        _std = markPrices.rolling(window).std()
-        centerLine = markPrices.rolling(window).mean()
+    def _calculateInds(self, ohlcv, rt_ohlcv, window): # callback안에서 실행되어야 함.
+        # 1 minute candle chart
+        self.ohlcv = ohlcv
+        self.opens = ohlcv['open']
+        self.highs = ohlcv['high']
+        self.lows = ohlcv['low']
+        self.closes = ohlcv['close']
+        self.volumes = ohlcv['volume']
 
-        '''
-        Lines which will be used in this strategy.
-        '''
-        upperBand = centerLine + 2*_std
-        upperInter = centerLine + _std
-        # centerLine
-        lowerInter = centerLine - _std
-        lowerBand = centerLine - 2*_std
+        # 250ms candlestick realTime update
+        self.rt_ohlcv = rt_ohlcv
+        self.rt_open = float(rt_ohlcv['open'][-1:])
+        self.rt_high = float(rt_ohlcv['high'][-1:])
+        self.rt_low = float(rt_ohlcv['low'][-1:])
+        self.rt_close = float(rt_ohlcv['close'][-1:])
+        self.rt_volume = float(rt_ohlcv['volume'][-1:])
 
-        self.markPrices = markPrices
-        self.upperBand = upperBand
-        self.upperInter = upperInter
-        self.centerLine = centerLine
-        self.lowerInter = lowerInter
-        self.lowerBand = lowerBand
-        return markPrices, upperBand, upperInter, centerLine, lowerInter, lowerBand
-
-
-    def _checkTradeInds(self, markPriceDf, window, timeLimit):
-        markPrices, upperBand, upperInter, centerLine, lowerInter, lowerBand = self._calculateInds(markPriceDf, window)
-        '''
-        Buy Indicator is composed of two indicators.
-        One is Open Long Indicator, The other is Close Short Indicator.
-        vice versa, to Sell Indicator.
-        '''
-        # Open indicators
-        openLongIndicator = (markPrices > upperBand)[-timeLimit:]
-        openShortIndicator = (markPrices < lowerBand)[-timeLimit:]
-
-        # Close indicators
-        closeLongIndicator = (markPrices < upperInter)[-timeLimit:]
-        closeShortIndicator = (markPrices > lowerInter)[-timeLimit:]
-
-        return openLongIndicator, closeShortIndicator, openShortIndicator, closeLongIndicator
-        
-
-    def getTradeConds(self, markPriceDf, window, openThr):
-        openLongIndicator, closeShortIndicator, openShortIndicator, closeLongIndicator = self._checkTradeInds(markPriceDf, window)
-        if openLongIndicator.sum() >= openThr:
-            self.openLong = True
-        else:
-            self.openLong = False
-
-        if openShortIndicator.sum() >= openThr:
-            self.openShort = True
-        else:
-            self.openShort = False
-
-        '''
-        When using Trailing_Stop Trade, no need to use closeIndicator.
-        '''
-        if list(closeShortIndicator)[-1]:
-            self.closeShort = True
-        else:
-            self.closeShort = False
-
-        if list(closeLongIndicator)[-1]:
-            self.closeLong = True
-        else:
-            self.closeLong = False
-
-
-
-class RVConditional(Conditional):
-    def __init__(self):
-        super().__init__()
-        self.rv1 = None
-        self.rv2 = None
+        # calculate BB
+        ma_ = self.closes.rolling(window).mean()
+        std_ = self.closes.rolling(window).std()
+        self.upperBand = ma_ + 2 * std_
+        self.upperInter = ma_ + std_
+        self.centerLine = ma_
+        self.lowerInter = ma_ - std_
+        self.lowerBand = ma_ - 2 * std_
 
     
-    def _calculateInds(self, markPriceDf, window1, window2):
-        markPrices = markPriceDf['markPrice']
-        rv1 = log_return(markPrices).rolling(window1).apply(realized_volatility)
-        rv2 = log_return(markPrices).rolling(window2).apply(realized_volatility)
-        self.rv1, self.rv2 = rv1, rv2
-        return rv1, rv2
+    def _updateCondition(self, ohlcv, rt_ohlcv, window):
+        self._calculateInds(ohlcv, rt_ohlcv, window)
+        # is_upperBandUpBt = None # close가 upperBand를 상행돌파
+        # is_upperInterDwBt = None # close가 upperInter를 하행돌파
 
+        is_upperInterUpBt = None # close가 upperInter를 상행돌파
+        is_upperBandDwBt = None # close가 upperBand를 하행돌파
 
-    def getTradeConds(self, markPriceDf, window1, window2, timeLimit):
-        rv1, rv2 = self._calculateInds(markPriceDf, window1, window2)
-        rv1_timeLimit, rv2_timeLimit = rv1[-timeLimit:], rv2[-timeLimit:]
+        is_lowerBandDwBt = None # close가 lowerBand를 하행돌파
+        is_lowerInterUpBt = None # close가 lowerInter를 상행돌파
 
-        self.openLong = np.all(rv1_timeLimit > rv2_timeLimit)
-        self.openShort = np.all(rv1_timeLimit > rv2_timeLimit)
+        # for debugging.
+        print()
+        print("- closePrice")
+        print(np.round(np.array(self.closes[-5:]), 3))
+        print("- upperBand")
+        print(np.round(np.array(self.upperBand[-5:]), 3))
+        print("- upperInter")
+        print(np.round(np.array(self.upperInter[-5:]), 3))
+        print("- currentPrice")
+        print(np.round(np.array(self.rt_close), 3))
 
-        self.closeLong = True
-        self.closeShort = True
+        # u1, u2가 동시에 이뤄지는 경우, close가 upperBand를 상행돌파했다고 가정
 
+        u1 = np.all(self.closes[-3:-1] < self.upperInter[-3:-1]) # 3분전 ~ 2분전 분봉에서는 close가 upperInter 아래에 있었다.
+        if u1:
+            u1_arrow = "<"
+        else:
+            u1_arrow = ">"
+        print(f"## UpperInter Condition 1 : Close {u1_arrow} UpperInter 2~3 mins ago.")
+        
+        u2 = self.rt_close > float(self.upperBand[-1:]) # 지금은 upperInter보다 위에 있다.
+        if u2:
+            u2_arrow = ">"
+        else:
+            u2_arrow = "<"
+        print(f"## UpperInter Condition 2 : Close {u2_arrow} UpperInter now.")
+
+        is_upperInterUpBt = (u1 and u2)
         
         
 
+        # u1, u2가 동시에 이뤄지는 경우, close가 upperInter를 하행돌파했다고 가정
+
+        u1 = np.all(self.closes[-2:-1] > self.upperBand[-2:-1]) # 2분전 분봉에서는 close가 upperBand 위에 있다
+        if u1:
+            u1_arrow = ">"
+        else:
+            u1_arrow = "<"
+        print(f"## UpperBand Condition 1 : Close {u1_arrow} UpperBand 2 mins ago.")
+
+        u2 = self.rt_close < float(self.upperBand[-1:]) # 지금은 upperInter보다 아래에 있다.
+        if u2:
+            u2_arrow = "<"
+        else:
+            u2_arrow = ">"
+        print(f"## UpperBand Condition 2 : Close {u2_arrow} UpperBand now.")
+
+        is_upperBandDwBt = (u1 and u2)
+
+        return is_upperInterUpBt, is_upperBandDwBt
+
+
+    def callback(self, ohlcv, rt_ohlcv, window=20) -> tuple:
+        '''
+        return values
+
+        - is_upperInterUpBt,
+        - is_upperBandDwBt
+        '''
+        return self._updateCondition(ohlcv, rt_ohlcv, window)
 
 
 
-
-
-'''
-
-class MAConditional(Conditional):
-
+class RVConditional():
+    '''
+    RV와 관련된 각종 condition들을 반환하는 class
+    '''
     def __init__(self):
-        super().__init__()
-        self.ma1 = None
-        self.ma2 = None
-        self.breakthrough_up = []
-        self.breakthrough_down = []
+        # RV
+        self.rvs = None
+        self.formerRvs = None
 
 
-    def _calculate_indicators(self, markPriceDf, window1, window2):
-        ma1 = markPriceDf['markPrice'].rolling(window1).mean()
-        ma2 = markPriceDf['markPrice'].rolling(window2).mean()
-        self.ma1, self.ma2 = ma1, ma2
-        return ma1, ma2
-
-    
-    def _check_conditions(self, markPriceDf, window1, window2):
-        ma1, ma2 = self._calculate_indicators(markPriceDf, window1, window2)
+    def _calculateInds(self, ohlcv, window):
+        self.closes = ohlcv['close']
+        log_return_ = log_return(self.closes)
+        realized_volatility_ = log_return_.rolling(window).apply(realized_volatility)
+        self.rvs = realized_volatility_
+        self.formerRvs = realized_volatility_.shift(10)
         
-            
-            
 
-    def update_ma_condition(self, ma1, ma2):
-        ma1_last = list(ma1)[-1]
-        ma2_last = list(ma2)[-1]   
-        if (not np.isnan(ma1_last)) and (not np.isnan(ma2_last)):
-            ma1_greater_ma2 = (ma1_last > ma2_last)   # NaN과의 비교는 어떻게 되는가?
-            # print("## DEBUG : ma1_last, ma2_last : ", ma1_last, ma2_last)
+    def _updateCondition(self, ohlcv, window):
+        self._calculateInds(ohlcv, window)
+        is_aboveFrv = None
+        is_belowFrv = None
+
+        # for debugging.
+        print()
+        print('- formerRvs')
+        print(np.round(np.array(self.formerRvs[-5:]), 3))
+        print('- currentRvs')
+        print(np.round(np.array(self.rvs[-5:]), 3))
+
+        # rv가 former RV 위에 있다.
+        u1 = np.all(self.formerRvs[-1:] < self.rvs[-1:])
+        if u1:
+            u1_arrow = ">"
         else:
-            # print("## ERROR : update_ma_condition is not triggered.")
-            ma1_greater_ma2 = None
-        
-        self.ma1_greater_ma2 = ma1_greater_ma2  # instance var update.
-        return ma1_greater_ma2
+            u1_arrow = "<"
+        print(f"## RV Condition 1 : currentRv {u1_arrow} formerRv") # 아래꺼는 이것과 똑같으므로 Debug printing X
+        is_aboveFrv = u1
+
+        # rv가 former RV 아래에 있다.
+        u1 = np.all(self.formerRvs[-1:] > self.rvs[-1:])
+        is_belowFrv = u1
+
+        return is_aboveFrv, is_belowFrv
 
 
-    def checkCondition(self):
-        # this method will be executed in Final callback function.
-        pass
-
-    # markPrice가 올 때마다 ma를 갱신하는 프로세스
-    ## markPrice message가 올 때마다, 이걸 수행해야 함.
-    def calculate_ma(self, window):
-        try:
-            ma = self.markPrice_df['markPrice'].rolling(window).mean()
-        except Exception as e:
-            print(f"## ERROR : ma with window {window} wasn't created.") # 만약 window가 전체 row 길이보다 크다면 어떻게 create되는가?
-            ma = None
-        return ma
-
-    ## markPrice마다.
-    def calculate_two_ma(self, window1, window2):
-        ma1 = self.calculate_ma(window1)
-        ma2 = self.calculate_ma(window2)
-        self.ma1, self.ma2 = ma1, ma2
-        return ma1, ma2
-
-    # ma condition을 업데이트하는 callback
-    def update_ma_condition(self, ma1, ma2):
-        ma1_last = list(ma1)[-1]
-        ma2_last = list(ma2)[-1]
-        if (not np.isnan(ma1_last)) and (not np.isnan(ma2_last)):
-            ma1_greater_ma2 = (ma1_last > ma2_last)   # NaN과의 비교는 어떻게 되는가?
-            # print("## DEBUG : ma1_last, ma2_last : ", ma1_last, ma2_last)
-        else:
-            # print("## ERROR : update_ma_condition is not triggered.")
-            ma1_greater_ma2 = None
-        
-        self.ma1_greater_ma2 = ma1_greater_ma2  # instance var update.
-        return ma1_greater_ma2
-
-    # update_bt_append 이후에 무조건 update_bt_remove가 와야 한다.
-    # update_bt condition은 함께 묶여야 함.
-    def update_bt_append_condition(self, ma1, ma2):
-        former_ma1_greater_ma2 = self.ma1_greater_ma2
-        current_ma1_greater_ma2 = self.update_ma_condition(ma1, ma2)
-        
-        # None과 관련된 부등식, 더 줄일 방법 없을지 찾아보기.
-        # 둘 다 None이 아니라는 가정 하에.
-        if (former_ma1_greater_ma2!=None) and (current_ma1_greater_ma2!=None):
-
-            # 두 개가 다르고, ma1이 ma2를 아래로 돌파
-            if former_ma1_greater_ma2!=current_ma1_greater_ma2:
-                if former_ma1_greater_ma2:
-                    self.bt_down.append(time.time())
-                else:
-                    self.bt_up.append(time.time())
-
-    def update_bt_remove_condition(self, remove_threshold):
-        # remove_threshold : 몇 초 동안 breakthrough 기록을 남겨놓을지. 디폴트는 50
-        bt_down = [bt_rec for bt_rec in self.bt_down if bt_rec>(time.time()-remove_threshold)]
-        bt_up = [bt_rec for bt_rec in self.bt_up if bt_rec>(time.time()-remove_threshold)]
-        self.bt_down = bt_down
-        self.bt_up = bt_up
-
-    def update_bt_condition(self, ma1, ma2, remove_threshold=50):
-        self.update_bt_append_condition(ma1, ma2)
-        self.update_bt_remove_condition(remove_threshold)
-
-    # ma와 관련된 buysell condition을 체크하는 함수.
-    # 만약 buy/sell signal이 있다면, instance var의 buysell condition을 갱신한다.
-    # bt_up 또는 bt_down을 전부 없애고 빈 리스트로 만드는 작업을 담은 function이 필요함. 향후에 만들어주기로.
-    def check_buysell_condition1(self):
-        if len(self.bt_up)>=2:
-            self.buy_condition1 = True
-        else: # buy하고 나면, self.bt_up이 빈 리스트가 되는 작업이 필요함 (아직 완료 안함, 완료하면 여기에 함수이름 쓰기로 -- trade 함수에 같이 써 주었음.)
-            self.buy_condition1 = False
-
-        if len(self.bt_down)>=2:
-            self.sell_condition1 = True
-        else: # sell하고 나면, self.bt_down이 빈 리스트가 되는 작업이 필요함
-            self.sell_condition1 = False
-
-    # markPrice가 들어왔을 때, ma를 활용해서 bt condition을 갱신하는 callback.
-    def callback_condition1(self):
-        ma1, ma2 = self.calculate_two_ma(12, 26)
-        self.update_bt_condition(ma1, ma2, 50)
-        self.check_buysell_condition1()
-
-'''
+    def callback(self, ohlcv, window=10) -> tuple:
+        return self._updateCondition(ohlcv, window)

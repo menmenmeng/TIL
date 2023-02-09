@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -15,6 +16,10 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
         self.pre_kline = None
         self.pre_rvs = None
         self.listenKey = None
+
+        now = datetime.now()
+        nowMin = now.year, now.month, now.day, now.hour, now.minute-1
+        self.endTime = dt2ms(*nowMin)
 
     '''
     <xxx_listenKey methods>
@@ -60,30 +65,107 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
             "Found error. status: {}, error code: {}, error message: {}".format(
                 error.status_code, error.error_code, error.error_message
             )
-    
+    '''
+    ## 중요.
+    getData_recentOHLCV와 getData_OHLCV가 거의 동일한 함수이므로, 이거를 통합할 생각을 해보자.
+    '''
+    def getData_OHLCV(self, interval, **kwargs):
 
-    def getData_OHLCV(self, interval, limit): # limit should be under 1500
-        if limit > 1500:
-            print("limit should be under 1500. pre_getKline function is not triggered.")
-            return None
+        try:
+            startTime = kwargs['startTime']
+            endTime = kwargs['endTime']
+        except:
+            startTime = None
+            endTime = None
+
+        try:
+            limit = kwargs['limit']
+        except:
+            limit = None
+
+
+        print("OHLCV loading...")
+
+        if startTime and endTime and limit:
+            json_kline = self.client.klines(self.symbol, interval, startTime=startTime, endTime=endTime, limit=limit)
+        elif not limit:
+            json_kline = self.client.klines(self.symbol, interval, startTime=startTime, endTime=endTime)
+        elif (not startTime) and (not endTime) and limit:
+            if limit > 1500:
+                print("limit should be under 1500. get_OHLCV function is not triggered.")
+                return None
+            else:
+                json_kline = self.client.klines(self.symbol, interval, limit=limit)
         else:
-            json_kline = self.client.klines(self.symbol, interval, limit=limit)
-
-            columns = ['OpenTime', 'Open', 'High', 'Low', 'Close', 'Volume', 'CloseTime', 'QuoteAssetVolume', 'NumOfTrades',
-                    'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume', 'Ignore']
-
-            df_kline = pd.DataFrame(json_kline, columns=columns)
-            df_kline['OpenTime'] = df_kline['OpenTime'].astype("datetime64[ms]")
-            df_kline['CloseTime'] = df_kline['CloseTime'].astype("datetime64[ms]")
-            df_kline[['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']] = df_kline[['Open', 'High', 'Low', 'Close', 'Volume', 'QuoteAssetVolume', 'TakerBuyBaseAssetVolume', 'TakerBuyQuoteAssetVolume']].astype('float64')
-            df_kline.drop(['Ignore'], axis=1, inplace=True)
-
-            self.pre_kline = df_kline
-            return df_kline
+            print("function got invalid parameters. get_OHLCV function is not triggered.")
+            return None
 
 
-    def getData_vol(self, window):
-        pre_kline = self.pre_getOHLCV('1m', 480)
+        wss_columns = [
+            'stream',
+            'eventType',
+            'eventTime',
+            'startTime',
+            'closeTime',
+            'interval',
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+        ]
+
+        rest_columns = [
+            'OpenTime', 
+            'Open', 
+            'High', 
+            'Low', 
+            'Close', 
+            'Volume', 
+            'CloseTime', 
+            'QuoteAssetVolume', 
+            'NumOfTrades',
+            'TakerBuyBaseAssetVolume', 
+            'TakerBuyQuoteAssetVolume', 
+            'Ignore'
+        ]
+
+        rename_columns = {
+            "OpenTime":"startTime",
+            "Open":"open",
+            "High":"high",
+            "Low":"low",
+            "Close":"close",
+            "Volume":"volume",
+            "CloseTime":"closeTime"
+        }
+
+        df_kline = pd.DataFrame(json_kline, columns=rest_columns)
+        df_kline['stream'] = f"kline{interval}"
+        df_kline['eventType'] = "kline"
+        df_kline['eventTime'] = int(time.time()*1000)
+        df_kline['interval'] = interval
+        df_kline.rename(columns=rename_columns, inplace=True)
+
+        df_kline['startTime'] = df_kline['startTime'].astype(np.int64)
+        df_kline['closeTime'] = df_kline['closeTime'].astype(np.int64)
+        df_kline['open'] = df_kline['open'].astype(float)
+        df_kline['high'] = df_kline['high'].astype(float)
+        df_kline['low'] = df_kline['low'].astype(float)
+        df_kline['close'] = df_kline['close'].astype(float)
+        df_kline['volume'] = df_kline['volume'].astype(float)
+        
+        df_kline = df_kline[wss_columns]
+
+        self.pre_kline = df_kline
+
+        # for debugging.
+        print("lastKline shape:", df_kline.shape)
+        return df_kline
+
+
+    def getData_rv(self, window):
+        pre_kline = self.getData_OHLCV('1m', 480)
         sr_kline_close = pre_kline['Close'].astype(float)
         rvs = log_return(sr_kline_close).rolling(window=window).apply(realized_volatility)
 
@@ -92,7 +174,7 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
 
 
     def getInfo_account(self, verbose=False): # information needed for realtime Trading.
-        asset_USDT, position_BTCUSDT = self.pre_getAccount()
+        asset_USDT, position_BTCUSDT = self.getData_account()
         current_asset = float(asset_USDT['walletBalance'])
         positionAmt, entryPrice = float(position_BTCUSDT['positionAmt']), float(position_BTCUSDT['entryPrice'])
         if verbose:
@@ -102,14 +184,14 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
         return current_asset, positionAmt, entryPrice
 
 
-    def getInfo_streams(self, symbol, *streamKeys):
+    def getInfo_streams(self, streamSymbol, *streamKeys):
         '''
         Auto-generate streamValues(like "btcusdt@markPrice@1s") with streamKeys, and return streamDict.
         You can use this return dictionary as input of Trader instance.
         Must receive valid parameters, and valid parameters are presented below.
 
         - valid parameter form.
-            symbol = "btcusdt"
+            streamSymbol = "btcusdt" (must be lowercase)
             streamKeys = [
                 "markPrice1s",
                 "aggTrade",
@@ -129,21 +211,34 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
         streamDict = dict()
         for key in streamKeys:
             if key == "markPrice1s":
-                streamDict[key] = symbol + "@markPrice@1s"
+                streamDict[key] = streamSymbol + "@markPrice@1s"
             elif key == "markPrice3s":
-                streamDict[key] = symbol + "@markPrice@3s"
+                streamDict[key] = streamSymbol + "@markPrice@3s"
+
+            elif key == "kline1m":
+                streamDict[key] = streamSymbol + "@kline_1m"
+            elif key == "kline3m":
+                streamDict[key] = streamSymbol + "@kline_3m"
+            elif key == "kline5m":
+                streamDict[key] = streamSymbol + "@kline_5m"
+            elif key == "kline15m":
+                streamDict[key] = streamSymbol + "@kline_15m"
+            elif key == "kline30m":
+                streamDict[key] = streamSymbol + "@kline_30m"
+
             elif key == "aggTrade":
-                streamDict[key] = symbol + "@aggTrade"
+                streamDict[key] = streamSymbol + "@aggTrade"
             elif key == "userData":
                 if self.listenKey :
                     streamDict[key] = self.listenKey
                 else:
                     self.new_listenKey()
                     streamDict[key] = self.listenKey
+        print(streamDict) # for debugg.
         return streamDict
 
 
-    def getInfo_trade(self, symbol, *streamKeys): ## send to trader.
+    def getInfo_trade(self, streamSymbol, *streamKeys): ## send to trader.
         current_asset, positionAmt, entryPrice = self.getInfo_account()
-        streamDict = self.getInfo_streams(symbol, *streamKeys)
+        streamDict = self.getInfo_streams(streamSymbol, *streamKeys)
         return current_asset, positionAmt, entryPrice, streamDict

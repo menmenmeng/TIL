@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from datetime import datetime
 
 class Collector():
     '''
@@ -8,7 +10,7 @@ class Collector():
     '''
     def __init__(self, **streamDict):
         self.streamDict = streamDict
-        self.streamDict_inverse = {v: k for k, v in streamDict}
+        self.streamDict_inverse = {v: k for k, v in streamDict.items()}
 
         self.rowDict = None
         self.rowDF = None
@@ -31,6 +33,15 @@ class Collector():
             - "ORDER_TRADE_UPDATE"
             - "ACCOUNT_UPDATE"
             - ...
+
+        - streamKey example
+            - "markPrice1s"
+            - "markPrice3s"
+            - "aggTrade"
+            - "userData"
+            - ...
+        - eventType example
+            - same as message['data']['e']
         '''
 
         try:
@@ -54,8 +65,10 @@ class Collector():
 
         row_dict = self.getRowDictFromMessage(message)
         row_df = pd.DataFrame(row_dict, index=[0])
+        # print(row_df) # only for kline..
         self.DataFrame = pd.concat([self.DataFrame, row_df], axis=0)
         self.DataFrame.reset_index(drop=True, inplace=True)
+        self.cutDataFrame(100)
         return self.DataFrame
  
 
@@ -69,11 +82,22 @@ class Collector():
         raise NotImplementedError
 
 
+    def cutDataFrame(self, cutthr):
+        try:
+            rowNum = self.DataFrame.shape[0]
+        except:
+            rowNum = 0
+        if rowNum > cutthr:
+            self.DataFrame = self.DataFrame[-cutthr:]
+            self.DataFrame.reset_index(drop=True, inplace=True)
+
 
 class MarkPriceCollector(Collector):
     def __init__(self, **streamDict):
         super().__init__(**streamDict)
+        self.eventTime = 0
         self.currentPrice = 0
+        self.startTime = None
 
 
     def getRowDictFromMessage(self, message):
@@ -88,9 +112,159 @@ class MarkPriceCollector(Collector):
             markPrice = float(data['p']),
             indexPrice = float(data['i']),
         )
-
+        
+        self.eventTime = data['E']
         self.currentPrice = float(data['p'])
         return row_dict
+
+
+
+class __KlineCollector(Collector):
+    def __init__(self, lastKlines, **streamDict):
+        super().__init__(**streamDict)
+        self.eventTime = 0
+        self.open = 0
+        self.close = 0
+        self.high = 0
+        self.low = 0
+        self.volume = 0
+
+        self.startTime = None
+        self._former_row = None
+        self._current_row = None
+        self.DataFrame = lastKlines
+
+
+    def getDataFrame(self, message):
+        '''
+        This method should be executed in Final callback function.
+        Every time websocket receives message, collector instances will update their <self.DataFrame>.
+        After execute this, <self.DataFrame> should be saved into some other variable outside instance.
+        '''
+
+        row_dict = self.getRowDictFromMessage(message)
+        if row_dict == None:
+            return self.DataFrame
+        else:
+            row_df = pd.DataFrame(row_dict, index=[0])
+            self.DataFrame = pd.concat([self.DataFrame, row_df], axis=0)
+            self.DataFrame.reset_index(drop=True, inplace=True)
+            print("Kline updated.")
+            print(self.DataFrame)
+            return self.DataFrame
+
+
+    def getRowDictFromMessage(self, message):
+        streamKey, eventType = self.getEventType(message)
+        data = message['data']
+        kline = data['k']
+
+        row_dict = dict(
+            stream = streamKey,
+            eventType = eventType,
+
+            eventTime = int(data['E']),
+            startTime = int(kline['t']),
+            closeTime = int(kline['T']),
+            interval = str(kline['i']),
+            open = float(kline['o']),
+            high = float(kline['h']),
+            low = float(kline['l']),
+            close = float(kline['c']),
+            volume = float(kline['v'])
+        )
+
+        self.eventTime = row_dict['eventTime']
+        self.open = row_dict['open']
+        self.high = row_dict['high']
+        self.low = row_dict['low']
+        self.close = row_dict['close']
+        self.volume = row_dict['volume']
+
+        self._former_row = self._current_row
+        self._current_row = row_dict
+
+        if self._former_row == None:
+            return
+
+        if self._former_row['startTime'] == self._current_row['startTime']:
+            return self._former_row
+
+        else:
+            return self._former_row
+
+
+
+class RealTimeKlineCollector(Collector):
+    def __init__(self, **streamDict):
+        super().__init__(**streamDict)
+        self.closeTime = 0
+        self.open = 0
+        self.close = 0
+        self.high = 0
+        self.low = 0
+        self.volume = 0
+
+    def getRowDictFromMessage(self, message):
+        streamKey, eventType = self.getEventType(message)
+        data = message['data']
+        kline = data['k']
+
+        row_dict = dict(
+            stream = streamKey,
+            eventType = eventType,
+
+            eventTime = int(data['E']),
+            startTime = int(kline['t']),
+            closeTime = int(kline['T']),
+            interval = str(kline['i']),
+            open = float(kline['o']),
+            high = float(kline['h']),
+            low = float(kline['l']),
+            close = float(kline['c']),
+            volume = float(kline['v'])
+        )
+
+
+        self.closeTime = int(kline['t'])
+        self.open = float(kline['o'])
+        self.close = float(kline['c'])
+        self.high = float(kline['h'])
+        self.low = float(kline['l'])
+        self.volume = float(kline['v'])
+
+        print(row_dict.values())
+        return row_dict
+
+
+
+class KlineCollector(RealTimeKlineCollector):
+    def __init__(self, lastKlines, **streamDict):
+        super().__init__(**streamDict)
+        self.DataFrame = lastKlines
+
+
+    def getDataFrame(self, message):
+        '''
+        This method should be executed in Final callback function.
+        Every time websocket receives message, collector instances will update their <self.DataFrame>.
+        After execute this, <self.DataFrame> should be saved into some other variable outside instance.
+        '''
+
+        row_dict = self.getRowDictFromMessage(message)
+        row_df = pd.DataFrame(row_dict, index=[0])
+        # print(row_df) # only for kline..
+        if int(row_df[0:]['startTime']) == int(self.DataFrame[-1:]['startTime']):
+            self.DataFrame[-1:] = row_df
+        else:
+            self.DataFrame = pd.concat([self.DataFrame, row_df], axis=0)
+            print("kline updated.")
+            print(self.DataFrame) # This code prints dataframe which didnt reset index yet. Do not hesitate.
+
+        self.DataFrame.reset_index(drop=True, inplace=True)
+
+        self.cutDataFrame(100)
+        return self.DataFrame
 
 
 
@@ -103,6 +277,7 @@ class OrderUpdateCollector(Collector):
         streamKey, eventType = self.getEventType(message)
         data = message['data']
         orderData = data['o']
+        self.realizedProfit = 0
 
         row_dict = dict(
             stream = streamKey,
@@ -118,7 +293,7 @@ class OrderUpdateCollector(Collector):
             stopPrice = float(orderData['sp']),
             execType = orderData['x'],
             orderStatus = orderData['X'],
-            orderLastFilledQ = float(orderData['i']),
+            orderLastFilledQuantity = float(orderData['i']),
             commisionAsset = orderData['N'],
             commision = float(orderData['n']),
             stopPriceWorkingType = orderData['wt'],
@@ -129,7 +304,12 @@ class OrderUpdateCollector(Collector):
             callbackRate = float(orderData['cr']),
             realizedProfit = float(orderData['rp']),
         )
-        
+        today = datetime.now().strftime('%y%m%d')
+        now = datetime.now().strftime('%H:%M:%S')
+        with open(f'OrderUpdate_{today}.txt', 'a') as f:
+            f.write(now, str(row_dict), '\n')
+
+        self.realizedProfit += float(orderData['rp'])
         return row_dict
 
 
@@ -140,6 +320,7 @@ class AccountUpdateCollector(Collector):
         self.currentAmt = 0
         self.entryPrice = 0
         self.currentAsset = current_asset
+        self.balanceChange = 0
 
 
     def _getDataFromMessage(self, message):
@@ -188,7 +369,15 @@ class AccountUpdateCollector(Collector):
             positionSide = position_BOTH['ps'],
         )
 
+        self.balanceChange += float(balance_USDT['bc'])
         self.currentAmt = float(position_BOTH['pa'])
         self.entryPrice = float(position_BOTH['ep'])
         self.currentAsset = float(balance_USDT['wb'])
+
+        ####
+        today = datetime.now().strftime('%y%m%d')
+        now = datetime.now().strftime('%H:%M:%S')
+        with open(f'AccountUpdate_{today}.txt', 'a') as f:
+            f.write(now, str(row_dict), '\n')
+
         return row_dict
