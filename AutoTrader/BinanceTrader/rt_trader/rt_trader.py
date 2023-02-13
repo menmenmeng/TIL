@@ -38,8 +38,8 @@ Defining futures client instances.
 First one is REST API instance,
 Second one is WSS API instance.
 '''
-um_futures_client = UMFutures(key=key, secret=secret, base_url=futures_testnet) # testnet. If you want to connect this to realnet, drop base_url param.
-my_client = UMFuturesWebsocketClient(stream_url=futures_websocket_testnet) # testnet. realnet - Same as above.
+um_futures_client = UMFutures(key=API_KEY, secret=SECRET_KEY) # testnet. If you want to connect this to realnet, drop base_url param.
+my_client = UMFuturesWebsocketClient() # testnet. realnet - Same as above.
 
 
 '''

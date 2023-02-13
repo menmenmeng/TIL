@@ -18,7 +18,7 @@ class Decision():
         self.positionAmt = positionAmt
         self.entryPrice = entryPrice
 
-        self.tradeAmt = 0.05
+        self.tradeAmt = 0.01
         # self.tradePrice = 0
 
         self.ableTradeFlag = False # trade를 할 조건이 갖추어졌는가?
@@ -39,24 +39,44 @@ class Decision():
         if not self.nearLastTrade:
             # 1. No position
             if is_np:
+                ## for debug
+                print("is_np:", is_np)
+                ##
 
                 if is_upperInterUpBt and is_aboveFrv:
+                    ## for debug
+                    print("is_upperInterUpBt:", is_upperInterUpBt)
+                    ##
                     self.trade_limit("BUY", price=round(self.entryPrice*1.001, 1), amount=self.tradeAmt)
-                
-                else:
-                    pass
 
             # 2. Long position
             elif is_long: # positionAmt 가 있다는 얘기는 곧, entryPrice도 존재한다는 얘기.
+                ## for debug
+                print("is_long:", is_long)
+                ##
 
                 if is_upperBandDwBt:
+                    ## for debug
+                    print("is_upperBandDwBt:", is_upperBandDwBt)
+                    ##
                     self.trade_limit("SELL", price=round(self.entryPrice*0.999, 1), amount=self.tradeAmt)
                 
                 elif (currentPrice < self.entryPrice*0.97) or (currentPrice > self.entryPrice*1.04):
+
+                    ## for debug
+                    if (currentPrice < self.entryPrice*0.97) : print("stopLoss")
+                    else: print("takeProfit")
+                    ##
+
                     self.trade_limit("SELL", price=round(self.entryPrice*0.999, 1), amount=self.tradeAmt)
 
 
     def trade_limit(self, side, price, amount):
+
+        ## for debug
+        print("trade method triggered.")
+        ##
+
         try:
             response = self.client.new_order(
                 symbol="BTCUSDT",
@@ -68,6 +88,10 @@ class Decision():
             )
             logging.info(response)
             self.nearLastTrade = True
+
+            ## for debug
+            print("try trade method")
+            ##
 
         except ClientError as error:
             logging.error(
@@ -82,4 +106,3 @@ class Decision():
         # 그 전에는 무슨 수를 쓰더라도 Trade는 불가함.
         if is_belowFrv:
             self.nearLastTrade = False
-
