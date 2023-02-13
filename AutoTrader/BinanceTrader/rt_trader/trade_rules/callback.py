@@ -63,15 +63,13 @@ class Callback(Collector):
             ohlcv = self.klineCollector.getDataFrame(message)
             rt_ohlcv = self.rtKlineCollector.getDataFrame(message)
             rt_close = float(rt_ohlcv['close'][-1:])
-            is_upperInterUpBt, is_upperBandDwBt = self.bbConditonal.callback(ohlcv, rt_ohlcv, 20)
-            is_aboveFrv, is_belowFrv = self.rvConditional.callback(ohlcv, 10)
+            bbCondition = self.bbConditonal.callback(ohlcv, rt_ohlcv, 20)
+            rvCondition = self.rvConditional.callback(ohlcv, 10)
 
             self.decider.trade(
                 currentPrice = rt_close,
-                is_upperInterUpBt=is_upperInterUpBt,
-                is_upperBandDwBt=is_upperBandDwBt,
-                is_aboveFrv=is_aboveFrv,
-                is_belowFrv=is_belowFrv
+                bbCondition = bbCondition,
+                rvCondition = rvCondition,
             )
 
             # trade_flag를 반환하는 방법이 필요함, self.decider.trade()에 이런 기능을 넣어도 되고. 여기다가 추가해도 되고..
@@ -99,8 +97,9 @@ class Callback(Collector):
                 self.entryPrice = accountInfo[2]
                 self.balanceChange += accountInfo[3]
                 
-                self.decider.positionAmt = self.accountUpdateCollector.currentAmt
-                self.decider.entryPrice = self.accountUpdateCollector.entryPrice
+                self.decider.positionAmt = accountInfo[0]
+                self.decider.entryPrice = accountInfo[2]
+                self.decider.tradeTime = self.accountUpdateCollector.eventTime
         print()
         print("- Overall Evaluation.")
         print(f"Asset : {self.currentAsset}, currentAmt : {self.currentAmt}, entryPrice : {self.entryPrice}, balanceChange(except Commission) : {self.balanceChange}")

@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import time
 from datetime import datetime
+
 
 class Collector():
     '''
@@ -321,6 +323,7 @@ class AccountUpdateCollector(Collector):
         self.entryPrice = 0
         self.currentAsset = current_asset
         self.balanceChange = 0
+        self.eventTime = int(time.time()*1000)
 
 
     def _getDataFromMessage(self, message):
@@ -369,6 +372,7 @@ class AccountUpdateCollector(Collector):
             positionSide = position_BOTH['ps'],
         )
 
+        self.eventTime = int(data['E'])
         self.balanceChange += float(balance_USDT['bc'])
         self.currentAmt = float(position_BOTH['pa'])
         self.entryPrice = float(position_BOTH['ep'])

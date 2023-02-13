@@ -66,14 +66,6 @@ class BBConditional(KlineConditional):
     
     def _updateCondition(self, ohlcv, rt_ohlcv, window):
         self._calculateInds(ohlcv, rt_ohlcv, window)
-        # is_upperBandUpBt = None # close가 upperBand를 상행돌파
-        # is_upperInterDwBt = None # close가 upperInter를 하행돌파
-
-        is_upperInterUpBt = None # close가 upperInter를 상행돌파
-        is_upperBandDwBt = None # close가 upperBand를 하행돌파
-
-        is_lowerBandDwBt = None # close가 lowerBand를 하행돌파
-        is_lowerInterUpBt = None # close가 lowerInter를 상행돌파
 
         # for debugging.
         print()
@@ -89,11 +81,31 @@ class BBConditional(KlineConditional):
         upperInterDisplay = np.round(np.array(self.upperInter[-5:]), 3)
         print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(upperInterDisplay[0], upperInterDisplay[1], upperInterDisplay[2], upperInterDisplay[3], upperInterDisplay[4]))
 
+        print("- lowerInter  :", end=' ')
+        lowerInterDisplay = np.round(np.array(self.lowerInter[-5:]), 3)
+        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(lowerInterDisplay[0], lowerInterDisplay[1], lowerInterDisplay[2], lowerInterDisplay[3], lowerInterDisplay[4]))
+
+        print("- lowerBand   :", end=' ')
+        lowerBandDisplay = np.round(np.array(self.lowerBand[-5:]), 3)
+        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(lowerBandDisplay[0], lowerBandDisplay[1], lowerBandDisplay[2], lowerBandDisplay[3], lowerBandDisplay[4]))
+
         print("- currentPrice:", end=' ')
-        print(np.round(np.array(self.rt_close), 3))
+        print(" "*48 + "{:<10}".format(np.round(np.array(self.rt_close), 3)))
+        
+        ## Return values
+        PASTcloses_gt_upperInter_5t = self.closes[-5:] > self.upperInter[-5:]
+        PASTcloses_gt_upperBand_5t = self.closes[-5:] > self.upperBand[-5:]
 
-        # u1, u2가 동시에 이뤄지는 경우, close가 upperBand를 상행돌파했다고 가정
+        PASTcloses_lt_lowerInter_5t = self.closes[-5:] < self.lowerInter[-5:]
+        PASTcloses_lt_lowerBand_5t = self.closes[-5:] < self.lowerBand[-5:]
 
+        CURRclose_gt_upperInter = self.rt_close > float(self.upperInter[-1:])
+        CURRclose_gt_upperBand = self.rt_close > float(self.upperBand[-1:])
+
+        CURRclose_lt_lowerInter = self.rt_close < float(self.lowerInter[-1:])
+        CURRclose_lt_lowerBand = self.rt_close < float(self.lowerBand[-1:])
+
+        '''
         u1 = np.all(self.closes[-4:] < self.upperInter[-4:]) # 5분전 ~ 2분전 분봉에서는 close가 upperInter 아래에 있었다.
         if u1:
             u1_arrow = "<"
@@ -129,16 +141,24 @@ class BBConditional(KlineConditional):
         print(f"## UpperBand Condition 2 {u2} : Close {u2_arrow} UpperBand now.")
 
         is_upperBandDwBt = (u1 and u2)
+        '''
 
-        return is_upperInterUpBt, is_upperBandDwBt
+        return (
+            PASTcloses_gt_upperInter_5t, 
+            PASTcloses_gt_upperBand_5t,
+            PASTcloses_lt_lowerInter_5t,
+            PASTcloses_lt_lowerBand_5t,
+            CURRclose_gt_upperInter,
+            CURRclose_gt_upperBand,
+            CURRclose_lt_lowerInter,
+            CURRclose_lt_lowerBand
+        )
+
 
 
     def callback(self, ohlcv, rt_ohlcv, window=20) -> tuple:
         '''
-        return values
-
-        - is_upperInterUpBt,
-        - is_upperBandDwBt
+        return values (8 values above)
         '''
         return self._updateCondition(ohlcv, rt_ohlcv, window)
 
@@ -151,15 +171,12 @@ class RVConditional():
     def __init__(self):
         # RV
         self.rvs = None
-        self.formerRvs = None
 
 
     def _calculateInds(self, ohlcv, window):
-        self.closes = ohlcv['close']
-        log_return_ = log_return(self.closes)
-        realized_volatility_ = log_return_.rolling(window).apply(realized_volatility)
-        self.rvs = realized_volatility_
-        self.formerRvs = realized_volatility_.shift(10)
+        self.closes = ohlcv[-1:]['close']
+        _realized_volatility = log_return(self.closes).rolling(window).apply(realized_volatility)
+        self.rvs = _realized_volatility
         
 
     def _updateCondition(self, ohlcv, window):
@@ -169,11 +186,11 @@ class RVConditional():
 
         # for debugging.
         print()
-        print('- formerRvs')
-        print(np.round(np.array(self.formerRvs[-5:]), 5))
-        print('- currentRvs')
-        print(np.round(np.array(self.rvs[-5:]), 5))
+        print("- currentRVs  :", end=' ')
+        currentRVsDisplay = np.round(np.array(self.rvs[-5:]), 5)
+        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(currentRVsDisplay[0], currentRVsDisplay[1], currentRVsDisplay[2], currentRVsDisplay[3], currentRVsDisplay[4]))
 
+        '''
         # rv가 former RV 위에 있다.
         u1 = np.all(self.formerRvs[-1:] < self.rvs[-1:])
         if u1:
@@ -183,8 +200,9 @@ class RVConditional():
         print(f"## RV Condition 1 {u1} : currentRv {u1_arrow} formerRv") # 아래꺼는 이것과 똑같으므로 Debug printing X
         is_aboveFrv = u1
         is_belowFrv = (not u1)
-
-        return is_aboveFrv, is_belowFrv
+        '''
+        
+        return self.rvs
 
 
     def callback(self, ohlcv, window=10) -> tuple:
