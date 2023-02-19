@@ -26,8 +26,8 @@ Third variables are base_urls. Each are REST testnet base_url, and WSS testnet b
 API_KEY = binanceKey.API_KEY
 SECRET_KEY = binanceKey.SECRET_KEY
 
-key = test_binanceKey.API_KEY
-secret = test_binanceKey.SECRET_KEY
+TEST_API_KEY = test_binanceKey.API_KEY
+TEST_SECRET_KEY = test_binanceKey.SECRET_KEY
 
 futures_testnet = test_binanceKey.futures_testnet
 futures_websocket_testnet = test_binanceKey.futures_websocket_testnet
@@ -37,9 +37,24 @@ futures_websocket_testnet = test_binanceKey.futures_websocket_testnet
 Defining futures client instances.
 First one is REST API instance,
 Second one is WSS API instance.
+
+# REST API instance example
+
+1. realnet
+
+um_futures_client = UMFutures(key=API_KEY, secret=SECRET_KEY)
+my_client = UMFuturesWebsocketClient()
+
+
+2. testnet
+
+um_futures_client = UMFutures(key=TEST_API_KEY, secret=TEST_SECRET_KEY, base_url=futures_testnet)
+my_client = UMFuturesWebsocketClient(stream_url=futures_websocket_testnet)
+
+# example end.
 '''
-um_futures_client = UMFutures(key=API_KEY, secret=SECRET_KEY) # testnet. If you want to connect this to realnet, drop base_url param.
-my_client = UMFuturesWebsocketClient() # testnet. realnet - Same as above.
+um_futures_client = UMFutures(key=TEST_API_KEY, secret=TEST_SECRET_KEY, base_url=futures_testnet)
+my_client = UMFuturesWebsocketClient(stream_url=futures_websocket_testnet)
 
 
 '''

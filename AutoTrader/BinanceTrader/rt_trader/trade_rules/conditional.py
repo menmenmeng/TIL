@@ -174,7 +174,7 @@ class RVConditional():
 
 
     def _calculateInds(self, ohlcv, window):
-        self.closes = ohlcv[-1:]['close']
+        self.closes = ohlcv[:-1]['close']
         _realized_volatility = log_return(self.closes).rolling(window).apply(realized_volatility)
         self.rvs = _realized_volatility
         

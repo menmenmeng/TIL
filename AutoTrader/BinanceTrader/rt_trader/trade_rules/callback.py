@@ -101,8 +101,8 @@ class Callback(Collector):
                 self.decider.entryPrice = accountInfo[2]
                 self.decider.tradeTime = self.accountUpdateCollector.eventTime
         print()
-        print("- Overall Evaluation.")
-        print(f"Asset : {self.currentAsset}, currentAmt : {self.currentAmt}, entryPrice : {self.entryPrice}, balanceChange(except Commission) : {self.balanceChange}")
+        print("## Overall Evaluation.")
+        print(f"- Asset : {self.currentAsset}, currentAmt : {self.currentAmt}, entryPrice : {self.entryPrice}, balanceChange(except Commission) : {self.balanceChange}")
         print()
         print(f"******* Callback {self.callbackNum} Ends. *******")
         print("\n\n")

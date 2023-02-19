@@ -29,7 +29,8 @@ class Decision():
 
         # trade flags
         self.tradeFlag = True
-        self.tradeTime = None
+        self.tradeTime = 0
+        self.tradeNum = 0
     
 
     def update_trade_flag(self):
@@ -54,8 +55,8 @@ class Decision():
         elif (timeNow - self.tradeTime) > 300_000 :
             self.tradeFlag = True
         
-        print(f"currentRV:{currentRV}, maxRV:{maxRV}, minRV:{minRV}, timeNow:{ms2dt(timeNow)}")
-        print(f"tradeFlag : {self.tradeFlag}")
+        print(f"- currentRVs(tradeFlag):{currentRV}, maxRV:{maxRV}, minRV:{minRV}, timeNow:{ms2dt(timeNow)}")
+        print(f"- tradeFlag : {self.tradeFlag}")
 
 
     def trade(self, currentPrice, **conditions):
@@ -159,7 +160,7 @@ class Decision():
                 pass
 
 
-
+        '''
         # Trade한 지 시간이 좀 지났다면(is_belowFrv형태가 되었다면)
         if not self.nearLastTrade:
             # 1. No position
@@ -194,6 +195,7 @@ class Decision():
                     ##
 
                     self.trade_limit("SELL", price=round(self.entryPrice*0.999, 1), amount=self.tradeAmt)
+                    '''
 
 
     def trade_limit(self, side, price, amount):
@@ -213,6 +215,7 @@ class Decision():
             )
             logging.info(response)
             self.tradeFlag = False
+            self.tradeNum += 1
 
             ## for debug
             print("tried trade method")
