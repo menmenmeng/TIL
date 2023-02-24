@@ -69,10 +69,7 @@ class BBConditional(KlineConditional):
 
         # for debugging.
         print()
-        print("- closePrice  :", end=' ')
-        closePriceDisplay = np.round(np.array(self.closes[-5:]), 3)
-        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(closePriceDisplay[0], closePriceDisplay[1], closePriceDisplay[2], closePriceDisplay[3], closePriceDisplay[4]))
-
+        
         print("- upperBand   :", end=' ')
         upperBandDisplay = np.round(np.array(self.upperBand[-5:]), 3)
         print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(upperBandDisplay[0], upperBandDisplay[1], upperBandDisplay[2], upperBandDisplay[3], upperBandDisplay[4]))
@@ -80,6 +77,10 @@ class BBConditional(KlineConditional):
         print("- upperInter  :", end=' ')
         upperInterDisplay = np.round(np.array(self.upperInter[-5:]), 3)
         print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(upperInterDisplay[0], upperInterDisplay[1], upperInterDisplay[2], upperInterDisplay[3], upperInterDisplay[4]))
+        
+        print("- closePrice  :", end=' ')
+        closePriceDisplay = np.round(np.array(self.closes[-5:]), 3)
+        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(closePriceDisplay[0], closePriceDisplay[1], closePriceDisplay[2], closePriceDisplay[3], closePriceDisplay[4]))
 
         print("- lowerInter  :", end=' ')
         lowerInterDisplay = np.round(np.array(self.lowerInter[-5:]), 3)

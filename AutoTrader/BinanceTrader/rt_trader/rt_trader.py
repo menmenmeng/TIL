@@ -53,8 +53,8 @@ my_client = UMFuturesWebsocketClient(stream_url=futures_websocket_testnet)
 
 # example end.
 '''
-um_futures_client = UMFutures(key=TEST_API_KEY, secret=TEST_SECRET_KEY, base_url=futures_testnet)
-my_client = UMFuturesWebsocketClient(stream_url=futures_websocket_testnet)
+um_futures_client = UMFutures(key=API_KEY, secret=SECRET_KEY)
+my_client = UMFuturesWebsocketClient()
 
 
 '''
@@ -65,7 +65,7 @@ Do things before websocket runs. By Using Prelim,
 And make stream lists, because wss subscribing needs parameter of stream list.
 '''
 prelim = Prelim(um_futures_client)
-currentAsset, positionAmt, entryPrice, streamDict = prelim.getInfo_trade("btcusdt", 'kline1m', 'userData')
+walletBalance, currentAsset, positionAmt, entryPrice, streamDict = prelim.getInfo_trade("btcusdt", 'kline1m', 'userData')
 lastKlines = prelim.getData_OHLCV("1m", limit=500)
 stream = list(streamDict.values())
 
@@ -73,7 +73,14 @@ stream = list(streamDict.values())
 Defining callback instance.
 config logging, and subscribe websocket.
 '''
-callbackExecuter = Callback(um_futures_client, currentAsset, lastKlines, **streamDict)  # Key와 Value가 더 잘 구분되게 수정 필요함. 
+callbackExecuter = Callback(
+    um_futures_client,
+    walletBalance,
+    currentAsset, 
+    positionAmt,
+    entryPrice,
+    lastKlines, 
+    **streamDict)  # Key와 Value가 더 잘 구분되게 수정 필요함. 
 
 config_logging(logging, logging.DEBUG)
 

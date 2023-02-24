@@ -8,7 +8,7 @@ from trade_rules.conditional import *
 from trade_rules.decision import * # Trader
 
 class Callback(Collector):
-    def __init__(self, UMclient, currentAsset, lastKlines, **streamDict):
+    def __init__(self, UMclient, walletBalance, currentAsset, positionAmt, entryPrice, lastKlines, **streamDict):
         super().__init__(**streamDict)
         # streamDict, streamDict_inverse를 Collector에게서 상속해옴.
         self.klineCollector = KlineCollector(lastKlines, **streamDict)
@@ -20,7 +20,7 @@ class Callback(Collector):
         self.bbConditonal = BBConditional()
         self.rvConditional = RVConditional()
 
-        self.decider = Decision(UMclient)
+        self.decider = Decision(UMclient, positionAmt=positionAmt, entryPrice=entryPrice)
 
 
         self.callbackNum = 0
@@ -81,6 +81,9 @@ class Callback(Collector):
                 print("eventType : ORDER_TRADE_UPDATE")
                 self.orderUpdateCollector.getDataFrame(message)
                 print(self.orderUpdateCollector.realizedProfit)
+                with open("orderTradeUpdate.txt", "a") as f:
+                    f.write(message)
+                    f.write("\n")
 
             elif eventType == "ACCOUNT_UPDATE":
                 print("eventType : ACCOUNT_UPDATE")
@@ -100,6 +103,10 @@ class Callback(Collector):
                 self.decider.positionAmt = accountInfo[0]
                 self.decider.entryPrice = accountInfo[2]
                 self.decider.tradeTime = self.accountUpdateCollector.eventTime
+                with open("accountUpdate.txt", "a") as f:
+                    f.write(message)
+                    f.write("\n")
+
         print()
         print("## Overall Evaluation.")
         print(f"- Asset : {self.currentAsset}, currentAmt : {self.currentAmt}, entryPrice : {self.entryPrice}, balanceChange(except Commission) : {self.balanceChange}")

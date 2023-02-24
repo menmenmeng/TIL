@@ -55,8 +55,10 @@ class Decision():
         elif (timeNow - self.tradeTime) > 300_000 :
             self.tradeFlag = True
         
-        print(f"- currentRVs(tradeFlag):{currentRV}, maxRV:{maxRV}, minRV:{minRV}, timeNow:{ms2dt(timeNow)}")
+        print(f"- currentRVsTF:")
+        print(f"-- currentRV:{round(currentRV, 5):<7} maxRV:{round(maxRV, 5):<7} minRV:{round(minRV, 5):<7}")
         print(f"- tradeFlag : {self.tradeFlag}")
+        print(f"- currTime  : {ms2dt(timeNow)}")
 
 
     def trade(self, currentPrice, **conditions):
@@ -100,12 +102,14 @@ class Decision():
             # 1.
             if (np.all(PASTcloses_gt_upperInter_5t[-2:] == False)) and CURRclose_gt_upperInter:
                 # get long position. (buy)
-                pass
+                tradePrice = round(currentPrice*1.01, 1)
+                self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
             # 2.
             if (np.all(PASTcloses_lt_lowerInter_5t[-2:] == False)) and CURRclose_lt_lowerInter:
                 # get short position. (sell)
-                pass
+                tradePrice = round(currentPrice*0.99, 1)
+                self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
 
 
@@ -120,18 +124,22 @@ class Decision():
             3. 기타 custom 조건
                 - 1분전 close가 upperBand보다 높은데, 현재 close는 upperBand보다 낮아야 함
             '''
+
             # 1.
             if currentPrice <= self.entryPrice*0.97:
                 # stop Loss (clear long position, sell)
-                pass
+                tradePrice = round(currentPrice*0.99, 1)
+                self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
             elif currentPrice >= self.entryPrice*1.05:
                 # take Profit (clear long position. sell)
-                pass
+                tradePrice = round(currentPrice*0.99, 1)
+                self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
-            elif bool(PASTcloses_gt_upperBand_5t[-1:]) and bool(CURRclose_gt_upperBand == False):
+            elif np.all(PASTcloses_gt_upperBand_5t[-1:]) and bool(CURRclose_gt_upperBand == False):
                 # take Profit (clear long position. sell)
-                pass
+                tradePrice = round(currentPrice*0.99, 1)
+                self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
 
 
@@ -149,15 +157,18 @@ class Decision():
             # 1.
             if currentPrice >= self.entryPrice*1.03:
                 # stop Loss (clear short position, buy)
-                pass
+                tradePrice = round(currentPrice*1.01, 1)
+                self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
             elif currentPrice <= self.entryPrice*0.95:
                 # take Profit (clear short position, buy)
-                pass
+                tradePrice = round(currentPrice*1.01, 1)
+                self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
-            elif bool(PASTcloses_lt_lowerBand_5t[-1:]) and bool(CURRclose_lt_lowerBand == False):
+            elif np.all(PASTcloses_lt_lowerBand_5t[-1:]) and bool(CURRclose_lt_lowerBand == False):
                 # take Profit (clear short position, buy)
-                pass
+                tradePrice = round(currentPrice*1.01, 1)
+                self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
 
         '''
@@ -201,7 +212,14 @@ class Decision():
     def trade_limit(self, side, price, amount):
 
         ## for debug
+        print("#######################")
+        print("#######################")
         print("trade method triggered.")
+        print("#######################")
+        print("#######################")
+        timeNow = ms2dt(round(time.time()*1000, 0))
+        with open("trade_limit_test.txt", "a") as f:
+            f.write(f"time:{timeNow}, side:{side}, price:{price}, amount:{amount}\n")
         ##
 
         try:

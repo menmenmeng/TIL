@@ -175,13 +175,14 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
 
     def getInfo_account(self, verbose=False): # information needed for realtime Trading.
         asset_USDT, position_BTCUSDT = self.getData_account()
-        current_asset = float(asset_USDT['walletBalance'])
+        walletBalance, currentAsset = float(asset_USDT['walletBalance']), float(asset_USDT['availableBalance'])
         positionAmt, entryPrice = float(position_BTCUSDT['positionAmt']), float(position_BTCUSDT['entryPrice'])
         if verbose:
-            print("- current Asset            : ", current_asset)
+            print("- wallet balance           : ", walletBalance)
+            print("- available balance        : ", currentAsset)
             print("- current position Amount  : ", positionAmt)
             print("- entry Price              : ", entryPrice)
-        return current_asset, positionAmt, entryPrice
+        return walletBalance, currentAsset, positionAmt, entryPrice
 
 
     def getInfo_streams(self, streamSymbol, *streamKeys):
@@ -239,6 +240,6 @@ class Prelim(): # REST API를 이용해서 할 수 있는 것들을 다 하는 �
 
 
     def getInfo_trade(self, streamSymbol, *streamKeys): ## send to trader.
-        current_asset, positionAmt, entryPrice = self.getInfo_account()
+        walletBalance, currentAsset, positionAmt, entryPrice = self.getInfo_account()
         streamDict = self.getInfo_streams(streamSymbol, *streamKeys)
-        return current_asset, positionAmt, entryPrice, streamDict
+        return walletBalance, currentAsset, positionAmt, entryPrice, streamDict

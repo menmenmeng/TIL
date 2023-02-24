@@ -281,6 +281,16 @@ class OrderUpdateCollector(Collector):
         orderData = data['o']
         self.realizedProfit = 0
 
+        try:
+            AP = float(orderData['AP'])
+        except:
+            AP = None
+
+        try:
+            cr = float(orderData['cr'])
+        except:
+            cr = None
+
         row_dict = dict(
             stream = streamKey,
             eventType = eventType,
@@ -302,8 +312,8 @@ class OrderUpdateCollector(Collector):
             originOrderType = orderData['ot'],
             position = orderData['ps'],
             isCloseAll = orderData['cp'],
-            activationPrice = float(orderData['AP']),
-            callbackRate = float(orderData['cr']),
+            activationPrice = AP,
+            callbackRate = cr,
             realizedProfit = float(orderData['rp']),
         )
         today = datetime.now().strftime('%y%m%d')
