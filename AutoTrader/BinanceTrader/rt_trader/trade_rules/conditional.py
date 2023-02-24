@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from cert.myfuncs import *
 import logging
+from cert.myvars import logFile_base
 
 class KlineConditional():
     def __init__(self):
@@ -80,7 +81,7 @@ class BBConditional(KlineConditional):
         
         print("- closePrice  :", end=' ')
         closePriceDisplay = np.round(np.array(self.closes[-5:]), 3)
-        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10}".format(closePriceDisplay[0], closePriceDisplay[1], closePriceDisplay[2], closePriceDisplay[3], closePriceDisplay[4]))
+        print("{:<10}  {:<10}  {:<10}  {:<10}  {:<10} *".format(closePriceDisplay[0], closePriceDisplay[1], closePriceDisplay[2], closePriceDisplay[3], closePriceDisplay[4]))
 
         print("- lowerInter  :", end=' ')
         lowerInterDisplay = np.round(np.array(self.lowerInter[-5:]), 3)

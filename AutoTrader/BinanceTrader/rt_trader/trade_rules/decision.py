@@ -3,7 +3,9 @@ import pandas as pd
 import logging
 import time
 from cert.myfuncs import *
+from cert.myvars import logFile_base
 from binance.error import ClientError
+from datetime import datetime
 
 class Decision():
     '''
@@ -32,6 +34,12 @@ class Decision():
         self.tradeTime = 0
         self.tradeNum = 0
     
+        # stop Loss / take Profit rate
+        self.longStopLoss = 0.997
+        self.longTakeProfit = 1.003
+        self.shortStopLoss = 1.003
+        self.shortTakeProfit = 0.997
+
 
     def update_trade_flag(self):
         '''
@@ -102,13 +110,13 @@ class Decision():
             # 1.
             if (np.all(PASTcloses_gt_upperInter_5t[-2:] == False)) and CURRclose_gt_upperInter:
                 # get long position. (buy)
-                tradePrice = round(currentPrice*1.01, 1)
+                tradePrice = round(currentPrice*1.001, 1)
                 self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
             # 2.
             if (np.all(PASTcloses_lt_lowerInter_5t[-2:] == False)) and CURRclose_lt_lowerInter:
                 # get short position. (sell)
-                tradePrice = round(currentPrice*0.99, 1)
+                tradePrice = round(currentPrice*0.999, 1)
                 self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
 
@@ -126,19 +134,19 @@ class Decision():
             '''
 
             # 1.
-            if currentPrice <= self.entryPrice*0.97:
+            if currentPrice <= self.entryPrice*self.longStopLoss:
                 # stop Loss (clear long position, sell)
-                tradePrice = round(currentPrice*0.99, 1)
+                tradePrice = round(currentPrice*0.999, 1)
                 self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
-            elif currentPrice >= self.entryPrice*1.05:
+            elif currentPrice >= self.entryPrice*self.longTakeProfit:
                 # take Profit (clear long position. sell)
-                tradePrice = round(currentPrice*0.99, 1)
+                tradePrice = round(currentPrice*0.999, 1)
                 self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
             elif np.all(PASTcloses_gt_upperBand_5t[-1:]) and bool(CURRclose_gt_upperBand == False):
                 # take Profit (clear long position. sell)
-                tradePrice = round(currentPrice*0.99, 1)
+                tradePrice = round(currentPrice*0.999, 1)
                 self.trade_limit("SELL", tradePrice, self.tradeAmt)
 
 
@@ -155,19 +163,19 @@ class Decision():
                 - 1분전 close가 lowerBand보다 낮은데, 현재 close는 lowerBand보다 높아야 함
             '''
             # 1.
-            if currentPrice >= self.entryPrice*1.03:
+            if currentPrice >= self.entryPrice*self.shortStopLoss:
                 # stop Loss (clear short position, buy)
-                tradePrice = round(currentPrice*1.01, 1)
+                tradePrice = round(currentPrice*1.001, 1)
                 self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
-            elif currentPrice <= self.entryPrice*0.95:
+            elif currentPrice <= self.entryPrice*self.shortTakeProfit:
                 # take Profit (clear short position, buy)
-                tradePrice = round(currentPrice*1.01, 1)
+                tradePrice = round(currentPrice*1.001, 1)
                 self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
             elif np.all(PASTcloses_lt_lowerBand_5t[-1:]) and bool(CURRclose_lt_lowerBand == False):
                 # take Profit (clear short position, buy)
-                tradePrice = round(currentPrice*1.01, 1)
+                tradePrice = round(currentPrice*1.001, 1)
                 self.trade_limit("BUY", tradePrice, self.tradeAmt)
 
 
@@ -217,9 +225,10 @@ class Decision():
         print("trade method triggered.")
         print("#######################")
         print("#######################")
-        timeNow = ms2dt(round(time.time()*1000, 0))
-        with open("trade_limit_test.txt", "a") as f:
-            f.write(f"time:{timeNow}, side:{side}, price:{price}, amount:{amount}\n")
+        today = datetime.now().strftime('%y%m%d')
+        now = datetime.now().strftime('%H:%M:%S')
+        with open(f"{logFile_base}trade_limit_test_{today}.txt", "a") as f:
+            f.write(f"time:{now}, side:{side}, price:{price}, amount:{amount}\n")
         ##
 
         try:

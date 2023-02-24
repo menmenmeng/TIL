@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 from binance.error import ClientError
 from cert.myfuncs import *
+from cert.myvars import logFile_base
 
 endTime_datetime = datetime.now()
 endTime = endTime_datetime.timestamp()*1000

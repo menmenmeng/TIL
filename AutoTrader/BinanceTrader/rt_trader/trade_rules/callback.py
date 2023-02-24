@@ -7,6 +7,8 @@ from trade_rules.collector import *
 from trade_rules.conditional import *
 from trade_rules.decision import * # Trader
 
+from cert.myvars import logFile_base
+
 class Callback(Collector):
     def __init__(self, UMclient, walletBalance, currentAsset, positionAmt, entryPrice, lastKlines, **streamDict):
         super().__init__(**streamDict)
@@ -26,9 +28,10 @@ class Callback(Collector):
         self.callbackNum = 0
 
         # current Account information
-        self.currentAmt = 0
+        self.walletBalance = walletBalance
+        self.currentAmt = positionAmt
         self.currentAsset = currentAsset
-        self.entryPrice = 0
+        self.entryPrice = entryPrice
         self.balanceChange = 0
 
     def callback(self, message):
@@ -81,8 +84,11 @@ class Callback(Collector):
                 print("eventType : ORDER_TRADE_UPDATE")
                 self.orderUpdateCollector.getDataFrame(message)
                 print(self.orderUpdateCollector.realizedProfit)
-                with open("orderTradeUpdate.txt", "a") as f:
-                    f.write(message)
+                today = datetime.now().strftime('%y%m%d')
+                now = datetime.now().strftime('%H:%M:%S')
+                with open(f"{logFile_base}orderTradeUpdate_{today}.txt", "a") as f:
+                    f.write(f"time:{now}  ")
+                    f.write(f"message:{message}")
                     f.write("\n")
 
             elif eventType == "ACCOUNT_UPDATE":
@@ -103,12 +109,16 @@ class Callback(Collector):
                 self.decider.positionAmt = accountInfo[0]
                 self.decider.entryPrice = accountInfo[2]
                 self.decider.tradeTime = self.accountUpdateCollector.eventTime
-                with open("accountUpdate.txt", "a") as f:
-                    f.write(message)
+                today = datetime.now().strftime('%y%m%d')
+                now = datetime.now().strftime('%H:%M:%S')
+                with open(f"{logFile_base}accountUpdate_{today}.txt", "a") as f:
+                    f.write(f"time:{now}  ")
+                    f.write(f"message:{message}")
                     f.write("\n")
 
         print()
         print("## Overall Evaluation.")
+        print(f"- Trade Num : {self.decider.tradeNum}")
         print(f"- Asset : {self.currentAsset}, currentAmt : {self.currentAmt}, entryPrice : {self.entryPrice}, balanceChange(except Commission) : {self.balanceChange}")
         print()
         print(f"******* Callback {self.callbackNum} Ends. *******")

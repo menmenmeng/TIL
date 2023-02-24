@@ -1,2 +1,0 @@
-time:2023-02-23 20:46:31, side:SELL, price:23496.7, amount:0.01
-time:2023-02-23 20:46:32, side:SELL, price:23482.1, amount:0.01

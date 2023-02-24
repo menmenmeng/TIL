@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import time
 from datetime import datetime
+from cert.myvars import logFile_base
 
 
 class Collector():
@@ -281,6 +282,24 @@ class OrderUpdateCollector(Collector):
         orderData = data['o']
         self.realizedProfit = 0
 
+        '''
+        Not mandatory params by condition.
+        '''
+        try:
+            N = orderData['N']
+        except:
+            N = None
+
+        try:
+            n = float(orderData['n'])
+        except:
+            n = None
+
+        try:
+            cp = orderData['cp']
+        except:
+            cp = None
+
         try:
             AP = float(orderData['AP'])
         except:
@@ -290,6 +309,9 @@ class OrderUpdateCollector(Collector):
             cr = float(orderData['cr'])
         except:
             cr = None
+        '''
+        Not mandatory params by condition END.
+        '''
 
         row_dict = dict(
             stream = streamKey,
@@ -306,20 +328,21 @@ class OrderUpdateCollector(Collector):
             execType = orderData['x'],
             orderStatus = orderData['X'],
             orderLastFilledQuantity = float(orderData['i']),
-            commisionAsset = orderData['N'],
-            commision = float(orderData['n']),
+            commisionAsset = N,
+            commision = n,
             stopPriceWorkingType = orderData['wt'],
             originOrderType = orderData['ot'],
             position = orderData['ps'],
-            isCloseAll = orderData['cp'],
+            isCloseAll = cp,
             activationPrice = AP,
             callbackRate = cr,
             realizedProfit = float(orderData['rp']),
         )
         today = datetime.now().strftime('%y%m%d')
         now = datetime.now().strftime('%H:%M:%S')
-        with open(f'OrderUpdate_{today}.txt', 'a') as f:
-            f.write(now, str(row_dict), '\n')
+        with open(f'{logFile_base}OrderUpdate_{today}.txt', 'a') as f:
+            string = str(now) + str(row_dict) + '\n'
+            f.write(string)
 
         self.realizedProfit += float(orderData['rp'])
         return row_dict
@@ -391,7 +414,8 @@ class AccountUpdateCollector(Collector):
         ####
         today = datetime.now().strftime('%y%m%d')
         now = datetime.now().strftime('%H:%M:%S')
-        with open(f'AccountUpdate_{today}.txt', 'a') as f:
-            f.write(now, str(row_dict), '\n')
+        with open(f'{logFile_base}AccountUpdate_{today}.txt', 'a') as f:
+            string = str(now) + str(row_dict) + '\n'
+            f.write(string)
 
         return row_dict

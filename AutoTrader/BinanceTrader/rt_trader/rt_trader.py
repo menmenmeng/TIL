@@ -11,6 +11,7 @@ import seaborn as sns
 from cert import binanceKey
 from cert import test_binanceKey
 from cert.myfuncs import *
+from cert.myvars import logFile_base
 from trade_rules.prelim import Prelim
 from trade_rules.callback import Callback
 
@@ -68,6 +69,12 @@ prelim = Prelim(um_futures_client)
 walletBalance, currentAsset, positionAmt, entryPrice, streamDict = prelim.getInfo_trade("btcusdt", 'kline1m', 'userData')
 lastKlines = prelim.getData_OHLCV("1m", limit=500)
 stream = list(streamDict.values())
+
+with open(f'{logFile_base}accountInfo.txt', 'a') as f:
+    today = datetime.now().strftime('%y%m%d')
+    now = datetime.now().strftime('%H:%M:%S')
+    f.write(f"time:{today}, {now} \t")
+    f.write(f"walletBalance:{walletBalance}, currentAsset:{currentAsset},  positionAmt:{positionAmt}, entryPrice:{entryPrice} \n")
 
 '''
 Defining callback instance.
