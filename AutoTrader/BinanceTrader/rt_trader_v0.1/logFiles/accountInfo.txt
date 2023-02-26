@@ -1,0 +1,6 @@
+time:230224, 15:17:21 	walletBalance:768.66744984, currentAsset:768.66744984,  positionAmt:0.0, entryPrice:0.0 
+time:230224, 16:31:04 	walletBalance:768.45367504, currentAsset:768.45367504,  positionAmt:0.0, entryPrice:0.0 
+time:230224, 20:16:38 	walletBalance:768.82206834, currentAsset:768.82206834,  positionAmt:0.0, entryPrice:0.0 
+time:230224, 20:56:51 	walletBalance:768.10218757, currentAsset:768.10218757,  positionAmt:0.0, entryPrice:0.0 
+time:230224, 21:11:44 	walletBalance:767.24908357, currentAsset:767.24908357,  positionAmt:0.0, entryPrice:0.0 
+time:230224, 21:53:53 	walletBalance:766.69447636, currentAsset:766.69447636,  positionAmt:0.0, entryPrice:0.0 
