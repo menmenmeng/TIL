@@ -31,3 +31,10 @@ _kakao_internship_*
 _data_dacon_*
 
 *streamDataExample.txt*
+
+
+# DL 찌꺼기들.
+
+*.hdf5
+*.h5
+*my_logs
