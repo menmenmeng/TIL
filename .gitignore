@@ -38,3 +38,8 @@ _data_dacon_*
 *.hdf5
 *.h5
 *my_logs
+
+
+aaa.py
+
+.DS_store
